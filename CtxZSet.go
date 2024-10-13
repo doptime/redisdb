@@ -3,6 +3,7 @@ package redisdb
 import (
 	"reflect"
 
+	"github.com/doptime/logger"
 	"github.com/redis/go-redis/v9"
 	"github.com/vmihailenco/msgpack/v5"
 )
@@ -16,7 +17,7 @@ func ZSetKey[k comparable, v any](ops ...opSetter) *CtxZSet[k, v] {
 	ctx.KeyType = "zset"
 	op := Option{}.buildOptions(ops...)
 	if err := ctx.applyOption(op); err != nil {
-		Logger.Error().Err(err).Msg("data.New failed")
+		logger.Error().Err(err).Msg("data.New failed")
 		return nil
 	}
 	return ctx

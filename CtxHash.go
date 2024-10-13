@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"reflect"
 
+	"github.com/doptime/logger"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -16,7 +17,7 @@ func HashKey[k comparable, v any](ops ...opSetter) *CtxHash[k, v] {
 	ctx.KeyType = "hash"
 	op := Option{DataSource: "default"}.buildOptions(ops...)
 	if err := ctx.applyOption(op); err != nil {
-		Logger.Error().Err(err).Msg("data.New failed")
+		logger.Error().Err(err).Msg("data.New failed")
 		return nil
 	}
 	//add to hashKeyMap

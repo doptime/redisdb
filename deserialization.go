@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strconv"
 
+	"github.com/doptime/logger"
+
 	"github.com/vmihailenco/msgpack/v5"
 )
 
@@ -33,7 +35,7 @@ func (ctx *Ctx[k, v]) toKeys(valStr []string) (keys []k, err error) {
 			}
 		}
 		if err != nil {
-			Logger.Info().AnErr("HKeys: field unmarshal error:", err).Msgf("Key: %s", ctx.Key)
+			logger.Info().AnErr("HKeys: field unmarshal error:", err).Msgf("Key: %s", ctx.Key)
 			continue
 		}
 	}

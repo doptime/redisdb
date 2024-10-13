@@ -3,6 +3,7 @@ package redisdb
 import (
 	"time"
 
+	"github.com/doptime/logger"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -15,7 +16,7 @@ func ListKey[k comparable, v any](ops ...opSetter) *CtxList[k, v] {
 	ctx.KeyType = "list"
 	op := Option{}.buildOptions(ops...)
 	if err := ctx.applyOption(op); err != nil {
-		Logger.Error().Err(err).Msg("data.New failed")
+		logger.Error().Err(err).Msg("data.New failed")
 		return nil
 	}
 	return ctx

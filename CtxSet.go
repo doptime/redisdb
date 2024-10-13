@@ -1,5 +1,7 @@
 package redisdb
 
+import "github.com/doptime/logger"
+
 type CtxSet[k comparable, v any] struct {
 	Ctx[k, v]
 }
@@ -9,7 +11,7 @@ func SetKey[k comparable, v any](ops ...opSetter) *CtxSet[k, v] {
 	ctx.KeyType = "set"
 	Opt := Option{}.buildOptions(ops...)
 	if err := ctx.applyOption(Opt); err != nil {
-		Logger.Error().Err(err).Msg("data.New failed")
+		logger.Error().Err(err).Msg("data.New failed")
 		return nil
 	}
 	return ctx

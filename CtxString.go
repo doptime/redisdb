@@ -3,6 +3,8 @@ package redisdb
 import (
 	"strings"
 	"time"
+
+	"github.com/doptime/logger"
 )
 
 type CtxString[k comparable, v any] struct {
@@ -14,7 +16,7 @@ func StringKey[k comparable, v any](ops ...opSetter) *CtxString[k, v] {
 	ctx.KeyType = "string"
 	op := Option{}.buildOptions(ops...)
 	if err := ctx.applyOption(op); err != nil {
-		Logger.Error().Err(err).Msg("data.New failed")
+		logger.Error().Err(err).Msg("data.New failed")
 		return nil
 	}
 	return ctx
@@ -91,12 +93,12 @@ func (ctx *CtxString[k, v]) GetAll(match string) (mapOut map[k]v, err error) {
 
 		k, err := ctx.toKey([]byte(key))
 		if err != nil {
-			Logger.Info().AnErr("GetAll: key unmarshal error:", err).Msgf("Key: %s", ctx.Key)
+			logger.Info().AnErr("GetAll: key unmarshal error:", err).Msgf("Key: %s", ctx.Key)
 			continue
 		}
 		v, err := ctx.UnmarshalValue(val)
 		if err != nil {
-			Logger.Info().AnErr("GetAll: value unmarshal error:", err).Msgf("Key: %s", ctx.Key)
+			logger.Info().AnErr("GetAll: value unmarshal error:", err).Msgf("Key: %s", ctx.Key)
 			continue
 		}
 		mapOut[k] = v
