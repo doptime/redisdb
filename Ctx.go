@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/doptime/config/redisdb"
+	"github.com/doptime/config/cfgredis"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -85,7 +85,7 @@ func (ctx *Ctx[k, v]) applyOption(opt *Option) (err error) {
 		}
 	}
 	var exists bool
-	if ctx.Rds, exists = redisdb.Rds.Get(ctx.RdsName); !exists {
+	if ctx.Rds, exists = cfgredis.Servers.Get(ctx.RdsName); !exists {
 		return fmt.Errorf("rds item unconfigured: " + ctx.RdsName)
 	}
 	ctx.Context = context.Background()

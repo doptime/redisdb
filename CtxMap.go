@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/doptime/config/redisdb"
+	"github.com/doptime/config/cfgredis"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/vmihailenco/msgpack/v5"
 )
@@ -44,7 +44,7 @@ func CtxWitchValueSchemaChecked(key, keyType string, RedisDataSource string, msg
 		return nil, nil, fmt.Errorf("key name is disallowed: " + key)
 	}
 	ctx := Ctx[string, interface{}]{context.Background(), RedisDataSource, nil, key, keyType, nonKey.MarshalValue, nonKey.UnmarshalValue, nonKey.UnmarshalValues, useModer}
-	if ctx.Rds, exists = redisdb.Rds.Get(RedisDataSource); !exists {
+	if ctx.Rds, exists = cfgredis.Servers.Get(RedisDataSource); !exists {
 		return nil, nil, fmt.Errorf("rds item unconfigured: " + RedisDataSource)
 	}
 	return &ctx, value, nil
@@ -79,7 +79,7 @@ func (ctx *Ctx[k, v]) Validate() error {
 	if disallowed, found := DisAllowedDataKeyNames[ctx.Key]; found && disallowed {
 		return fmt.Errorf("key name is disallowed: " + ctx.Key)
 	}
-	if _, ok := redisdb.Rds.Get(ctx.RdsName); !ok {
+	if _, ok := cfgredis.Servers.Get(ctx.RdsName); !ok {
 		return fmt.Errorf("rds item unconfigured: " + ctx.RdsName)
 	}
 	return nil
