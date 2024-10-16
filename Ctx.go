@@ -94,7 +94,7 @@ func (ctx *Ctx[k, v]) applyOption(opt *Option) (err error) {
 	ctx.UseModer = RegisterStructModifiers(opt.Modifiers, reflect.TypeOf((*v)(nil)).Elem())
 
 	// don't register web data if it fully prepared
-	if opt.AsWebData {
+	if opt.AsWebData && ctx.Key != "" {
 		ctx.RegisterWebData()
 	}
 	return nil
