@@ -76,7 +76,7 @@ func (ctx *Ctx[k, v]) applyOption(opt *Option) (err error) {
 		ctx.RdsName = opt.DataSource
 	}
 
-	if opt.RegisterWebData {
+	if opt.AsWebData {
 		ctx.RegisterWebData()
 	}
 	if len(ctx.Key) == 0 {

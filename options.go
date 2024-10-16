@@ -3,10 +3,10 @@ package redisdb
 
 // Option is parameter to create an API, RPC, or CallAt
 type Option struct {
-	Key             string
-	DataSource      string
-	RegisterWebData bool
-	Modifiers       map[string]ModifierFunc
+	Key        string
+	DataSource string
+	AsWebData  bool
+	Modifiers  map[string]ModifierFunc
 }
 type opSetter func(*Option)
 
@@ -22,9 +22,9 @@ func WithRds(dataSource string) opSetter {
 	}
 }
 
-func WithRegisterWebData(registerWebData bool) opSetter {
+func WithAsWebData() opSetter {
 	return func(o *Option) {
-		o.RegisterWebData = registerWebData
+		o.AsWebData = true
 	}
 }
 func WithModifier(extraModifiers map[string]ModifierFunc) opSetter {
