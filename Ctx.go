@@ -75,15 +75,13 @@ func (ctx *Ctx[k, v]) applyOption(opt *Option) (err error) {
 	if len(opt.DataSource) > 0 {
 		ctx.RdsName = opt.DataSource
 	}
-
-	if opt.AsWebData {
-		ctx.RegisterWebData()
-	}
 	if len(ctx.Key) == 0 {
 		ctx.Key, err = GetValidDataKeyName((*v)(nil))
-		if err != nil {
-			return err
-		}
+	}
+	if err != nil {
+		return err
+	} else if len(ctx.Key) == 0 {
+		return fmt.Errorf("invalid data.Ctx Key name")
 	}
 	var exists bool
 	if ctx.Rds, exists = cfgredis.Servers.Get(ctx.RdsName); !exists {
@@ -94,6 +92,11 @@ func (ctx *Ctx[k, v]) applyOption(opt *Option) (err error) {
 	ctx.UnmarshalValue = ctx.toValueFunc()
 	ctx.UnmarshalValues = ctx.toValuesFunc()
 	ctx.UseModer = RegisterStructModifiers(opt.Modifiers, reflect.TypeOf((*v)(nil)).Elem())
+
+	// don't register web data if it fully prepared
+	if opt.AsWebData {
+		ctx.RegisterWebData()
+	}
 	return nil
 }
 
