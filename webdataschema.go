@@ -123,8 +123,9 @@ func (ctx *Ctx[k, v]) RegisterWebData() {
 		valueElem.Set(reflect.New(vType.Elem()))
 	}
 	value := valueElem.Interface()
-
-	if reflect.ValueOf(value).IsNil() {
+	val := reflect.ValueOf(value)
+	hasIsNil := val.Kind() == reflect.Ptr || val.Kind() == reflect.Slice || val.Kind() == reflect.Map || val.Kind() == reflect.Chan || val.Kind() == reflect.Func || val.Kind() == reflect.Interface
+	if hasIsNil && val.IsNil() {
 		return
 	}
 	initializeFields(valueElem)
