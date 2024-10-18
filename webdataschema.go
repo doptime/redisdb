@@ -15,81 +15,107 @@ var WebDataDocsMap cmap.ConcurrentMap[string, *WebDataDocs] = cmap.New[*WebDataD
 var SynWebDataRunOnce = sync.Mutex{}
 var KeyWebDataDocs = HashKey[string, *WebDataDocs](WithKey("Docs:Data"))
 
-func initializeFields(value reflect.Value) {
-	if value.Kind() == reflect.Ptr {
-		if value.IsNil() {
-			value.Set(reflect.New(value.Type().Elem()))
+// func initializeFields(value reflect.Value) (ret interface{}) {
+// 	switch value.Kind() {
+// 	case reflect.String:
+// 		ret = ""
+// 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+// 		ret = 0
+// 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+// 		ret = 0
+// 	case reflect.Float32, reflect.Float64:
+// 		ret = 0.0
+// 	case reflect.Bool:
+// 		ret = false
+// 	case reflect.Slice:
+// 		if value.IsNil() {
+// 			value.Set(reflect.MakeSlice(value.Type(), 0, 0))
+// 		}
+// 		elemType := value.Type().Elem()
+// 		if elemType.Kind() == reflect.Invalid {
+// 			return value.IsNil()
+// 		}
+// 		elementValue := initializeFields(reflect.New(elemType).Elem())
+// 		newSlice := reflect.Append(value, reflect.ValueOf(elementValue))
+// 		return newSlice.Interface()
+
+//		case reflect.Struct:
+//			for i := 0; i < value.NumField(); i++ {
+//				field := value.Field(i)
+//				if field.CanSet() {
+//					fieldValue := initializeFields(field)
+//					field.Set(reflect.ValueOf(fieldValue))
+//				}
+//			}
+//			return value.Interface()
+//		case reflect.Map:
+//			if value.IsNil() {
+//				value.Set(reflect.MakeMap(value.Type()))
+//			}
+//			keyType := value.Type().Key()
+//			valType := value.Type().Elem()
+//			if keyType.Kind() != reflect.Invalid && valType.Kind() != reflect.Invalid {
+//				mapKey := initializeFields(reflect.New(keyType).Elem())
+//				mapValue := initializeFields(reflect.New(valType).Elem())
+//				value.SetMapIndex(reflect.ValueOf(mapKey), reflect.ValueOf(mapValue))
+//			}
+//			return value.Interface()
+//		case reflect.Ptr:
+//			if value.IsNil() {
+//				value.Set(reflect.New(value.Type().Elem()))
+//			}
+//			initializeFields(value.Elem())
+//			return value.Interface()
+//		case reflect.Interface:
+//			if !value.IsNil() {
+//				elem := value.Elem()
+//				return initializeFields(elem)
+//			}
+//		}
+//		return value.Interface()
+//	}
+func initializeType(t reflect.Type) reflect.Value {
+	switch t.Kind() {
+	case reflect.Ptr:
+		elemValue := initializeType(t.Elem())
+		ptrValue := reflect.New(t.Elem())
+		ptrValue.Elem().Set(elemValue)
+		return ptrValue
+	case reflect.Slice:
+		elemType := t.Elem()
+		elemValue := initializeType(elemType)
+		sliceValue := reflect.MakeSlice(t, 1, 1)
+		sliceValue.Index(0).Set(elemValue)
+		return sliceValue
+	case reflect.Array:
+		elemType := t.Elem()
+		elemValue := initializeType(elemType)
+		arrayValue := reflect.New(t).Elem()
+		for i := 0; i < t.Len(); i++ {
+			arrayValue.Index(i).Set(elemValue)
 		}
-		value = value.Elem()
-	}
-
-	if value.Kind() == reflect.Struct {
-		for i := 0; i < value.NumField(); i++ {
-			field := value.Field(i)
-			fieldType := field.Type()
-
-			if field.Kind() == reflect.Ptr && field.IsNil() {
-				field.Set(reflect.New(fieldType.Elem()))
-			}
-
-			// 其它的类型
-			if field.Kind() == reflect.Map && field.IsNil() {
-				field.Set(reflect.MakeMap(fieldType))
-				// 如果map的key是string类型，初始化一个具体的值
-				if fieldType.Key().Kind() == reflect.String {
-					elemType := fieldType.Elem()
-					var elemValue reflect.Value
-					switch elemType.Kind() {
-					case reflect.String:
-						elemValue = reflect.ValueOf("")
-					case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-						elemValue = reflect.ValueOf(0)
-					case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-						elemValue = reflect.ValueOf(0)
-					case reflect.Float32, reflect.Float64:
-						elemValue = reflect.ValueOf(0.0)
-					case reflect.Bool:
-						elemValue = reflect.ValueOf(false)
-					case reflect.Ptr:
-						elemValue = reflect.New(elemType.Elem())
-					case reflect.Struct:
-						elemValue = reflect.New(elemType).Elem()
-						initializeFields(elemValue)
-					default:
-						elemValue = reflect.Zero(elemType)
-					}
-					field.SetMapIndex(reflect.ValueOf("exampleKey"), elemValue)
-				}
-			}
-
-			// 检查并初始化切片类型字段
-			if field.Kind() == reflect.Slice && field.IsNil() {
-				elemType := fieldType.Elem()
-				switch elemType.Kind() {
-				case reflect.String:
-					field.Set(reflect.MakeSlice(fieldType, 1, 1))
-					field.Index(0).Set(reflect.ValueOf(""))
-				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-					field.Set(reflect.MakeSlice(fieldType, 1, 1))
-					field.Index(0).Set(reflect.ValueOf(0))
-				case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-					field.Set(reflect.MakeSlice(fieldType, 1, 1))
-					field.Index(0).Set(reflect.ValueOf(0))
-				case reflect.Float32, reflect.Float64:
-					field.Set(reflect.MakeSlice(fieldType, 1, 1))
-					field.Index(0).Set(reflect.ValueOf(0.0))
-				case reflect.Bool:
-					field.Set(reflect.MakeSlice(fieldType, 1, 1))
-					field.Index(0).Set(reflect.ValueOf(false))
-				default:
-					field.Set(reflect.MakeSlice(fieldType, 0, 0))
-				}
-			}
-
-			if (field.Kind() == reflect.Struct || field.Kind() == reflect.Ptr) && !field.IsNil() {
-				initializeFields(field)
+		return arrayValue
+	case reflect.Map:
+		keyType := t.Key()
+		elemType := t.Elem()
+		keyValue := initializeType(keyType)
+		elemValue := initializeType(elemType)
+		mapValue := reflect.MakeMap(t)
+		mapValue.SetMapIndex(keyValue, elemValue)
+		return mapValue
+	case reflect.Struct:
+		structValue := reflect.New(t).Elem()
+		for i := 0; i < t.NumField(); i++ {
+			field := structValue.Field(i)
+			fieldType := t.Field(i)
+			if field.CanSet() && fieldType.PkgPath == "" { // 确保字段是可导出的
+				fieldValue := initializeType(fieldType.Type)
+				field.Set(fieldValue)
 			}
 		}
+		return structValue
+	default:
+		return reflect.Zero(t)
 	}
 }
 
@@ -107,30 +133,23 @@ func (ctx *Ctx[k, v]) RegisterWebData() {
 	if _, ok := validRdsKeyTypes[ctx.KeyType]; !ok {
 		return
 	}
-	// 获取 v 的类型
-	vType := reflect.TypeOf((*v)(nil)).Elem()
 
-	// 检查 vType 是否可以实例化
-	if vType.Kind() == reflect.Interface || vType.Kind() == reflect.Invalid {
+	// check if type of v can be instantiated
+	vType := reflect.TypeOf((*v)(nil)).Elem()
+	if vType.Kind() == reflect.Invalid {
 		fmt.Println("vType is not valid, vType: ", vType)
 		return
 	}
 
-	// 创建 v 的实例
-	valueElem := reflect.New(vType).Elem()
-	//if vType is pointer, we need to create a new instance of the valueElem
-	if vType.Kind() == reflect.Ptr {
-		valueElem.Set(reflect.New(vType.Elem()))
-	}
-	value := valueElem.Interface()
-	val := reflect.ValueOf(value)
-	hasIsNil := val.Kind() == reflect.Ptr || val.Kind() == reflect.Slice || val.Kind() == reflect.Map || val.Kind() == reflect.Chan || val.Kind() == reflect.Func || val.Kind() == reflect.Interface
-	if hasIsNil && val.IsNil() {
-		return
-	}
-	initializeFields(valueElem)
 	rootKey := strings.Split(ctx.Key, ":")[0]
-	dataSchema := &WebDataDocs{KeyName: rootKey, KeyType: ctx.KeyType, Instance: value, UpdateAt: time.Now().Unix(), CreateFromLocal: true}
+	obj := initializeType(vType).Interface()
+	dataSchema := &WebDataDocs{
+		KeyName:         rootKey,
+		KeyType:         ctx.KeyType,
+		Instance:        obj,
+		UpdateAt:        time.Now().Unix(),
+		CreateFromLocal: true,
+	}
 	WebDataDocsMap.Set(ctx.Key, dataSchema)
 	if SynWebDataRunOnce.TryLock() {
 		go syncWebDataToRedis()
