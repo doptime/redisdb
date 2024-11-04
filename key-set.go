@@ -2,12 +2,12 @@ package redisdb
 
 import "github.com/doptime/logger"
 
-type CtxSet[k comparable, v any] struct {
-	Ctx[k, v]
+type SetKey[k comparable, v any] struct {
+	RedisKey[k, v]
 }
 
-func SetKey[k comparable, v any](ops ...opSetter) *CtxSet[k, v] {
-	ctx := &CtxSet[k, v]{}
+func NewSetKey[k comparable, v any](ops ...opSetter) *SetKey[k, v] {
+	ctx := &SetKey[k, v]{}
 	ctx.KeyType = "set"
 	Opt := Option{}.buildOptions(ops...)
 	if err := ctx.applyOption(Opt); err != nil {
@@ -16,12 +16,12 @@ func SetKey[k comparable, v any](ops ...opSetter) *CtxSet[k, v] {
 	}
 	return ctx
 }
-func (ctx *CtxSet[k, v]) ConcatKey(fields ...interface{}) *CtxSet[k, v] {
-	return &CtxSet[k, v]{ctx.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
+func (ctx *SetKey[k, v]) ConcatKey(fields ...interface{}) *SetKey[k, v] {
+	return &SetKey[k, v]{ctx.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
 }
 
 // append to Set
-func (ctx *CtxSet[k, v]) SAdd(param v) (err error) {
+func (ctx *SetKey[k, v]) SAdd(param v) (err error) {
 	valStr, err := ctx.MarshalValue(param)
 	if err != nil {
 		return err
@@ -29,18 +29,18 @@ func (ctx *CtxSet[k, v]) SAdd(param v) (err error) {
 	return ctx.Rds.SAdd(ctx.Context, ctx.Key, valStr).Err()
 }
 
-func (ctx *CtxSet[k, v]) SCard() (int64, error) {
+func (ctx *SetKey[k, v]) SCard() (int64, error) {
 	return ctx.Rds.SCard(ctx.Context, ctx.Key).Result()
 }
 
-func (ctx *CtxSet[k, v]) SRem(param v) error {
+func (ctx *SetKey[k, v]) SRem(param v) error {
 	valStr, err := ctx.MarshalValue(param)
 	if err != nil {
 		return err
 	}
 	return ctx.Rds.SRem(ctx.Context, ctx.Key, valStr).Err()
 }
-func (ctx *CtxSet[k, v]) SIsMember(param v) (bool, error) {
+func (ctx *SetKey[k, v]) SIsMember(param v) (bool, error) {
 	valStr, err := ctx.MarshalValue(param)
 	if err != nil {
 		return false, err
@@ -48,14 +48,14 @@ func (ctx *CtxSet[k, v]) SIsMember(param v) (bool, error) {
 	return ctx.Rds.SIsMember(ctx.Context, ctx.Key, valStr).Result()
 }
 
-func (ctx *CtxSet[k, v]) SMembers() ([]v, error) {
+func (ctx *SetKey[k, v]) SMembers() ([]v, error) {
 	cmd := ctx.Rds.SMembers(ctx.Context, ctx.Key)
 	if err := cmd.Err(); err != nil {
 		return nil, err
 	}
 	return ctx.UnmarshalValues(cmd.Val())
 }
-func (ctx *CtxSet[k, v]) SScan(cursor uint64, match string, count int64) ([]v, uint64, error) {
+func (ctx *SetKey[k, v]) SScan(cursor uint64, match string, count int64) ([]v, uint64, error) {
 	cmd := ctx.Rds.SScan(ctx.Context, ctx.Key, cursor, match, count)
 	if err := cmd.Err(); err != nil {
 		return nil, 0, err

@@ -13,7 +13,7 @@ import (
 var WebDataDocsMap cmap.ConcurrentMap[string, *WebDataDocs] = cmap.New[*WebDataDocs]()
 
 var SynWebDataRunOnce = sync.Mutex{}
-var KeyWebDataDocs = HashKey[string, *WebDataDocs](WithKey("Docs:Data"))
+var KeyWebDataDocs = NewHashKey[string, *WebDataDocs](WithKey("Docs:Data"))
 
 // func initializeFields(value reflect.Value) (ret interface{}) {
 // 	switch value.Kind() {
@@ -128,7 +128,7 @@ type WebDataDocs struct {
 	Instance        interface{}
 }
 
-func (ctx *Ctx[k, v]) RegisterWebData() {
+func (ctx *RedisKey[k, v]) RegisterWebData() {
 	var validRdsKeyTypes = map[string]bool{"string": true, "list": true, "set": true, "hash": true, "zset": true, "stream": true}
 	if _, ok := validRdsKeyTypes[ctx.KeyType]; !ok {
 		return

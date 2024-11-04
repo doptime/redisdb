@@ -246,7 +246,65 @@ func ApplyModifiers(val interface{}) error {
 
 // ApplyDefault sets a default value if the current value is nil or the zero value for its type.
 func ApplyDefault(fieldValue interface{}, tagParam string) (interface{}, error) {
-	return tagParam, nil
+	//return the default value according to the type of the field
+	switch fieldValue.(type) {
+	case string:
+
+		return tagParam, nil
+	case int:
+		if v, err := strconv.Atoi(tagParam); err == nil {
+			return v, nil
+		}
+	case int8:
+		if v, err := strconv.ParseInt(tagParam, 10, 8); err == nil {
+			return int8(v), nil
+		}
+	case int16:
+		if v, err := strconv.ParseInt(tagParam, 10, 16); err == nil {
+			return int16(v), nil
+		}
+	case int32:
+		if v, err := strconv.ParseInt(tagParam, 10, 32); err == nil {
+			return int32(v), nil
+		}
+	case int64:
+		if v, err := strconv.ParseInt(tagParam, 10, 64); err == nil {
+			return v, nil
+		}
+	case uint:
+		if v, err := strconv.ParseUint(tagParam, 10, 0); err == nil {
+			return v, nil
+		}
+	case uint8:
+		if v, err := strconv.ParseUint(tagParam, 10, 8); err == nil {
+			return uint8(v), nil
+		}
+	case uint16:
+		if v, err := strconv.ParseUint(tagParam, 10, 16); err == nil {
+			return uint16(v), nil
+		}
+	case uint32:
+		if v, err := strconv.ParseUint(tagParam, 10, 32); err == nil {
+			return uint32(v), nil
+		}
+	case uint64:
+		if v, err := strconv.ParseUint(tagParam, 10, 64); err == nil {
+			return v, nil
+		}
+	case float32:
+		if v, err := strconv.ParseFloat(tagParam, 32); err == nil {
+			return float32(v), nil
+		}
+	case float64:
+		if v, err := strconv.ParseFloat(tagParam, 64); err == nil {
+			return v, nil
+		}
+	case bool:
+		if v, err := strconv.ParseBool(tagParam); err == nil {
+			return v, nil
+		}
+	}
+	return fieldValue, nil
 }
 
 // ApplyUnixTime sets the value to the current Unix timestamp based on provided unit.

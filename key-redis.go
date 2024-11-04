@@ -11,7 +11,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type Ctx[k comparable, v any] struct {
+type RedisKey[k comparable, v any] struct {
 	Context context.Context
 	RdsName string
 	Rds     *redis.Client
@@ -19,18 +19,27 @@ type Ctx[k comparable, v any] struct {
 	Key     string
 	KeyType string
 
-	MarshalValue    func(value v) (valueStr string, err error)
-	UnmarshalValue  func(valbytes []byte) (value v, err error)
-	UnmarshalValues func(valStrs []string) (values []v, err error)
-	UseModer        bool
+	MarshalValue         func(value v) (msgpack string, err error)
+	UnmarshalValue       func(msgpack []byte) (value v, err error)
+	UnmarshalValues      func(msgpacks []string) (values []v, err error)
+	UseModer             bool
+	PrimaryKeyFieldIndex int
 }
 
-func (ctx *Ctx[k, v]) Duplicate(newKey, RdsSourceName string) (newCtx Ctx[k, v]) {
-	return Ctx[k, v]{ctx.Context, RdsSourceName, ctx.Rds, newKey, ctx.KeyType, ctx.MarshalValue, ctx.UnmarshalValue, ctx.UnmarshalValues, ctx.UseModer}
+func (ctx *RedisKey[k, v]) V(value v) (ret v) {
+	ret = value
+	if ctx.UseModer {
+		ApplyModifiers(&ret)
+	}
+	return ret
 }
 
-func NonKey[k comparable, v any](ops ...opSetter) *Ctx[k, v] {
-	ctx := &Ctx[k, v]{Key: "nonkey", KeyType: "nonkey"}
+func (ctx *RedisKey[k, v]) Duplicate(newKey, RdsSourceName string) (newCtx RedisKey[k, v]) {
+	return RedisKey[k, v]{ctx.Context, RdsSourceName, ctx.Rds, newKey, ctx.KeyType, ctx.MarshalValue, ctx.UnmarshalValue, ctx.UnmarshalValues, ctx.UseModer, ctx.PrimaryKeyFieldIndex}
+}
+
+func NewRedisKey[k comparable, v any](ops ...opSetter) *RedisKey[k, v] {
+	ctx := &RedisKey[k, v]{Key: "nonkey", KeyType: "nonkey"}
 	op := Option{}.buildOptions(ops...)
 	if err := ctx.applyOption(op); err != nil {
 		logger.Error().Err(err).Msg("data.New failed")
@@ -38,16 +47,16 @@ func NonKey[k comparable, v any](ops ...opSetter) *Ctx[k, v] {
 	}
 	return ctx
 }
-func (ctx *Ctx[k, v]) Time() (tm time.Time, err error) {
+func (ctx *RedisKey[k, v]) Time() (tm time.Time, err error) {
 	cmd := ctx.Rds.Time(ctx.Context)
 	return cmd.Result()
 }
-func (ctx *Ctx[k, v]) GetUseModer() bool {
+func (ctx *RedisKey[k, v]) GetUseModer() bool {
 	return ctx.UseModer
 }
 
 // sacn key by pattern
-func (ctx *Ctx[k, v]) Scan(cursorOld uint64, match string, count int64) (keys []string, cursorNew uint64, err error) {
+func (ctx *RedisKey[k, v]) Scan(cursorOld uint64, match string, count int64) (keys []string, cursorNew uint64, err error) {
 	var (
 		cmd   *redis.ScanCmd
 		_keys []string
@@ -68,7 +77,7 @@ func (ctx *Ctx[k, v]) Scan(cursorOld uint64, match string, count int64) (keys []
 	}
 	return keys, cursorNew, nil
 }
-func (ctx *Ctx[k, v]) applyOption(opt *Option) (err error) {
+func (ctx *RedisKey[k, v]) applyOption(opt *Option) (err error) {
 	if len(opt.Key) > 0 {
 		ctx.Key = opt.Key
 	}
@@ -100,7 +109,7 @@ func (ctx *Ctx[k, v]) applyOption(opt *Option) (err error) {
 	return nil
 }
 
-func (ctx *Ctx[k, v]) toKeyValueStrs(keyValue ...interface{}) (keyValStrs []string, err error) {
+func (ctx *RedisKey[k, v]) toKeyValueStrs(keyValue ...interface{}) (keyValStrs []string, err error) {
 	var (
 		key              k
 		value            v
@@ -143,10 +152,10 @@ func (ctx *Ctx[k, v]) toKeyValueStrs(keyValue ...interface{}) (keyValStrs []stri
 	}
 	return keyValStrs, nil
 }
-func (ctx *Ctx[k, v]) MsgpackUnmarshalValue(msgpack []byte) (rets interface{}, err error) {
+func (ctx *RedisKey[k, v]) MsgpackUnmarshalValue(msgpack []byte) (rets interface{}, err error) {
 	return nil, nil
 }
 
-func (ctx *Ctx[k, v]) MsgpackUnmarshalKeyValues(msgpack []byte) (rets interface{}, err error) {
+func (ctx *RedisKey[k, v]) MsgpackUnmarshalKeyValues(msgpack []byte) (rets interface{}, err error) {
 	return nil, nil
 }

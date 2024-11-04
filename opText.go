@@ -6,7 +6,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func (ctx *Ctx[k, v]) Keys() (out []k, err error) {
+func (ctx *RedisKey[k, v]) Keys() (out []k, err error) {
 	var (
 		cmd  *redis.StringSliceCmd
 		keys []string
@@ -19,7 +19,7 @@ func (ctx *Ctx[k, v]) Keys() (out []k, err error) {
 }
 
 // for the reason of protection, both ctx.Key & Key are required. the avoid set Hash table to the wrong type , and thus leading to data loss.
-func (ctx *Ctx[k, v]) Set(key k, param v, expiration time.Duration) (err error) {
+func (ctx *RedisKey[k, v]) Set(key k, param v, expiration time.Duration) (err error) {
 	var (
 		keyStr string
 		valStr string
@@ -36,7 +36,7 @@ func (ctx *Ctx[k, v]) Set(key k, param v, expiration time.Duration) (err error) 
 }
 
 // for the reason of protection, both ctx.Key & Key are required. the avoid set Hash table to the wrong type , and thus leading to data loss.
-func (ctx *Ctx[k, v]) Del(key k) (err error) {
+func (ctx *RedisKey[k, v]) Del(key k) (err error) {
 	var (
 		keyStr string
 	)

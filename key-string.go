@@ -7,12 +7,12 @@ import (
 	"github.com/doptime/logger"
 )
 
-type CtxString[k comparable, v any] struct {
-	Ctx[k, v]
+type StringKey[k comparable, v any] struct {
+	RedisKey[k, v]
 }
 
-func StringKey[k comparable, v any](ops ...opSetter) *CtxString[k, v] {
-	ctx := &CtxString[k, v]{}
+func NewStringKey[k comparable, v any](ops ...opSetter) *StringKey[k, v] {
+	ctx := &StringKey[k, v]{}
 	ctx.KeyType = "string"
 	op := Option{}.buildOptions(ops...)
 	if err := ctx.applyOption(op); err != nil {
@@ -22,10 +22,10 @@ func StringKey[k comparable, v any](ops ...opSetter) *CtxString[k, v] {
 	return ctx
 }
 
-func (ctx *CtxString[k, v]) ConcatKey(fields ...interface{}) *CtxString[k, v] {
-	return &CtxString[k, v]{ctx.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
+func (ctx *StringKey[k, v]) ConcatKey(fields ...interface{}) *StringKey[k, v] {
+	return &StringKey[k, v]{ctx.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
 }
-func (ctx *CtxString[k, v]) Get(Field k) (value v, err error) {
+func (ctx *StringKey[k, v]) Get(Field k) (value v, err error) {
 	FieldStr, err := ctx.toKeyStr(Field)
 	if err != nil {
 		return value, err
@@ -49,7 +49,7 @@ func (ctx *CtxString[k, v]) Get(Field k) (value v, err error) {
 	return ctx.UnmarshalValue(data)
 }
 
-func (ctx *CtxString[k, v]) Set(key k, value v, expiration time.Duration) error {
+func (ctx *StringKey[k, v]) Set(key k, value v, expiration time.Duration) error {
 	keyStr, err := ctx.toKeyStr(key)
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func (ctx *CtxString[k, v]) Set(key k, value v, expiration time.Duration) error 
 	return ctx.Rds.Set(ctx.Context, ctx.Key+":"+keyStr, valStr, expiration).Err()
 }
 
-func (ctx *CtxString[k, v]) Del(key k) error {
+func (ctx *StringKey[k, v]) Del(key k) error {
 	keyStr, err := ctx.toKeyStr(key)
 	if err != nil {
 		return err
@@ -70,7 +70,7 @@ func (ctx *CtxString[k, v]) Del(key k) error {
 }
 
 // get all keys that match the pattern, and return a map of key->value
-func (ctx *CtxString[k, v]) GetAll(match string) (mapOut map[k]v, err error) {
+func (ctx *StringKey[k, v]) GetAll(match string) (mapOut map[k]v, err error) {
 	var (
 		keys []string = []string{match}
 		val  []byte
@@ -107,7 +107,7 @@ func (ctx *CtxString[k, v]) GetAll(match string) (mapOut map[k]v, err error) {
 }
 
 // set each key value of _map to redis string type key value
-func (ctx *CtxString[k, v]) SetAll(_map map[k]v) (err error) {
+func (ctx *StringKey[k, v]) SetAll(_map map[k]v) (err error) {
 	//HSet each element of _map to redis
 	pipe := ctx.Rds.Pipeline()
 	for k, v := range _map {

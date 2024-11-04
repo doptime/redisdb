@@ -9,7 +9,7 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 )
 
-func (ctx *Ctx[k, v]) toKeyStr(key interface{}) (keyStr string, err error) {
+func (ctx *RedisKey[k, v]) toKeyStr(key interface{}) (keyStr string, err error) {
 	if vv := reflect.ValueOf(key); vv.Kind() == reflect.Ptr && vv.IsNil() {
 		return "", nil
 	} else if !vv.IsValid() {
@@ -50,7 +50,7 @@ func (ctx *Ctx[k, v]) toKeyStr(key interface{}) (keyStr string, err error) {
 		return string(keyBytes), nil
 	}
 }
-func (ctx *Ctx[k, v]) toValueStrFun() func(value v) (valueStr string, err error) {
+func (ctx *RedisKey[k, v]) toValueStrFun() func(value v) (valueStr string, err error) {
 	var typeofv = reflect.TypeOf((*v)(nil)).Elem().Kind()
 	switch typeofv {
 	//type string
@@ -130,7 +130,7 @@ func (ctx *Ctx[k, v]) toValueStrFun() func(value v) (valueStr string, err error)
 	}
 }
 
-func (ctx *Ctx[k, v]) toKeyStrs(keys ...interface{}) (KeyStrs []string, err error) {
+func (ctx *RedisKey[k, v]) toKeyStrs(keys ...interface{}) (KeyStrs []string, err error) {
 	var keyStr string
 	for _, key := range keys {
 		if keyStr, err = ctx.toKeyStr(key); err != nil {
@@ -141,7 +141,7 @@ func (ctx *Ctx[k, v]) toKeyStrs(keys ...interface{}) (KeyStrs []string, err erro
 	return KeyStrs, nil
 }
 
-func (ctx *Ctx[k, v]) toValueStrsSlice(values ...v) (ValueStrs []interface{}, err error) {
+func (ctx *RedisKey[k, v]) toValueStrsSlice(values ...v) (ValueStrs []interface{}, err error) {
 	var valueStr string
 	for _, value := range values {
 		if valueStr, err = ctx.MarshalValue(value); err != nil {

@@ -2,34 +2,46 @@ package redisdb
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 
 	"github.com/doptime/logger"
 	"github.com/redis/go-redis/v9"
 )
 
-type CtxHash[k comparable, v any] struct {
-	Ctx[k, v]
+type HashKey[k comparable, v any] struct {
+	RedisKey[k, v]
 }
 
-func HashKey[k comparable, v any](ops ...opSetter) *CtxHash[k, v] {
-	ctx := &CtxHash[k, v]{}
+func NewHashKey[k comparable, v any](ops ...opSetter) *HashKey[k, v] {
+	ctx := &HashKey[k, v]{}
 	ctx.KeyType = "hash"
 	op := Option{DataSource: "default"}.buildOptions(ops...)
 	if err := ctx.applyOption(op); err != nil {
 		logger.Error().Err(err).Msg("data.New failed")
 		return nil
 	}
+	ctx.getPrimaryKeyFieldIndex()
 	//add to hashKeyMap
 	hKeyMap.Set(ctx.Key+":"+ctx.RdsName, ctx)
 	return ctx
 }
-
-func (ctx *CtxHash[k, v]) ConcatKey(fields ...interface{}) *CtxHash[k, v] {
-	return &CtxHash[k, v]{ctx.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
+func (ctx *HashKey[k, v]) getPrimaryKeyFieldIndex() {
+	//get first field of v , which type is k
+	var val v
+	var fieldN = reflect.TypeOf(val).NumField()
+	for i := 0; i < fieldN; i++ {
+		_, ok := reflect.ValueOf(val).Field(ctx.PrimaryKeyFieldIndex).Interface().(k)
+		if ok {
+			ctx.PrimaryKeyFieldIndex = i
+		}
+	}
+}
+func (ctx *HashKey[k, v]) ConcatKey(fields ...interface{}) *HashKey[k, v] {
+	return &HashKey[k, v]{ctx.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
 }
 
-func (ctx *CtxHash[k, v]) HGet(field k) (value v, err error) {
+func (ctx *HashKey[k, v]) HGet(field k) (value v, err error) {
 	fieldStr, err := ctx.toKeyStr(field)
 	if err != nil {
 		return value, err
@@ -50,7 +62,7 @@ func (ctx *CtxHash[k, v]) HGet(field k) (value v, err error) {
 //   - HSet("myhash", "key1", "value1", "key2", "value2")
 //
 //   - HSet("myhash", map[string]interface{}{"key1": "value1", "key2": "value2"})
-func (ctx *CtxHash[k, v]) HSet(values ...interface{}) error {
+func (ctx *HashKey[k, v]) HSet(values ...interface{}) error {
 
 	if kvMap, ok := values[0].(map[k]v); ok {
 		return ctx.HMSet(kvMap)
@@ -75,7 +87,25 @@ func (ctx *CtxHash[k, v]) HSet(values ...interface{}) error {
 	}
 	return ctx.Rds.HSet(ctx.Context, ctx.Key, KeyValuesStrs).Err()
 }
-func (ctx *CtxHash[k, v]) HMSet(kvMap map[k]v) error {
+func (ctx *HashKey[k, v]) Save(value v) error {
+	//get first field of v , which type is k
+	var fieldN = reflect.TypeOf(value).NumField()
+	if fieldN == 0 {
+		return ctx.HSet(value)
+	}
+	if ctx.UseModer {
+		ApplyModifiers(&value)
+	}
+	if ctx.PrimaryKeyFieldIndex > 0 {
+		field, ok := reflect.ValueOf(value).Field(ctx.PrimaryKeyFieldIndex).Interface().(k)
+		if ok {
+			return ctx.HSet(field, value)
+		}
+	}
+	return fmt.Errorf("no field of type k found in value")
+}
+
+func (ctx *HashKey[k, v]) HMSet(kvMap map[k]v) error {
 	// if Moder is not nil, apply modifiers to the values
 	if ctx.UseModer {
 		for _, value := range kvMap {
@@ -89,7 +119,7 @@ func (ctx *CtxHash[k, v]) HMSet(kvMap map[k]v) error {
 	}
 	return ctx.Rds.HSet(ctx.Context, ctx.Key, KeyValuesStrs).Err()
 }
-func (ctx *CtxHash[k, v]) HExists(field k) (bool, error) {
+func (ctx *HashKey[k, v]) HExists(field k) (bool, error) {
 	fieldStr, err := ctx.toKeyStr(field)
 	if err != nil {
 		return false, err
@@ -97,7 +127,7 @@ func (ctx *CtxHash[k, v]) HExists(field k) (bool, error) {
 	return ctx.Rds.HExists(ctx.Context, ctx.Key, fieldStr).Result()
 }
 
-func (ctx *CtxHash[k, v]) HGetAll() (map[k]v, error) {
+func (ctx *HashKey[k, v]) HGetAll() (map[k]v, error) {
 	result, err := ctx.Rds.HGetAll(ctx.Context, ctx.Key).Result()
 	if err != nil {
 		return nil, err
@@ -117,7 +147,7 @@ func (ctx *CtxHash[k, v]) HGetAll() (map[k]v, error) {
 	return mapOut, nil
 }
 
-func (ctx *CtxHash[k, v]) HRandField(count int) (fields []k, err error) {
+func (ctx *HashKey[k, v]) HRandField(count int) (fields []k, err error) {
 	var (
 		cmd *redis.StringSliceCmd
 	)
@@ -126,7 +156,7 @@ func (ctx *CtxHash[k, v]) HRandField(count int) (fields []k, err error) {
 	}
 	return ctx.toKeys(cmd.Val())
 }
-func (ctx *CtxHash[k, v]) HMGET(fields ...interface{}) (values []v, err error) {
+func (ctx *HashKey[k, v]) HMGET(fields ...interface{}) (values []v, err error) {
 	var (
 		cmd          *redis.SliceCmd
 		fieldsString []string
@@ -147,12 +177,12 @@ func (ctx *CtxHash[k, v]) HMGET(fields ...interface{}) (values []v, err error) {
 	}
 	return ctx.UnmarshalValues(rawValues)
 }
-func (ctx *CtxHash[k, v]) HLen() (length int64, err error) {
+func (ctx *HashKey[k, v]) HLen() (length int64, err error) {
 	cmd := ctx.Rds.HLen(ctx.Context, ctx.Key)
 	return cmd.Val(), cmd.Err()
 }
 
-func (ctx *CtxHash[k, v]) HDel(fields ...k) (err error) {
+func (ctx *HashKey[k, v]) HDel(fields ...k) (err error) {
 	var (
 		cmd       *redis.IntCmd
 		fieldStrs []string
@@ -178,7 +208,7 @@ func (ctx *CtxHash[k, v]) HDel(fields ...k) (err error) {
 	return cmd.Err()
 }
 
-func (ctx *CtxHash[k, v]) HKeys() ([]k, error) {
+func (ctx *HashKey[k, v]) HKeys() ([]k, error) {
 	result, err := ctx.Rds.HKeys(ctx.Context, ctx.Key).Result()
 	if err != nil {
 		return nil, err
@@ -194,7 +224,7 @@ func (ctx *CtxHash[k, v]) HKeys() ([]k, error) {
 	return keys, nil
 }
 
-func (ctx *CtxHash[k, v]) HVals() ([]v, error) {
+func (ctx *HashKey[k, v]) HVals() ([]v, error) {
 	result, err := ctx.Rds.HVals(ctx.Context, ctx.Key).Result()
 	if err != nil {
 		return nil, err
@@ -210,7 +240,7 @@ func (ctx *CtxHash[k, v]) HVals() ([]v, error) {
 	return values, nil
 }
 
-func (ctx *CtxHash[k, v]) HIncrBy(field k, increment int64) error {
+func (ctx *HashKey[k, v]) HIncrBy(field k, increment int64) error {
 	fieldStr, err := ctx.toKeyStr(field)
 	if err != nil {
 		return err
@@ -218,14 +248,14 @@ func (ctx *CtxHash[k, v]) HIncrBy(field k, increment int64) error {
 	return ctx.Rds.HIncrBy(ctx.Context, ctx.Key, fieldStr, increment).Err()
 }
 
-func (ctx *CtxHash[k, v]) HIncrByFloat(field k, increment float64) error {
+func (ctx *HashKey[k, v]) HIncrByFloat(field k, increment float64) error {
 	fieldStr, err := ctx.toKeyStr(field)
 	if err != nil {
 		return err
 	}
 	return ctx.Rds.HIncrByFloat(ctx.Context, ctx.Key, fieldStr, increment).Err()
 }
-func (ctx *CtxHash[k, v]) HSetNX(field k, value v) error {
+func (ctx *HashKey[k, v]) HSetNX(field k, value v) error {
 	fieldStr, err := ctx.toKeyStr(field)
 	if err != nil {
 		return err
@@ -237,7 +267,7 @@ func (ctx *CtxHash[k, v]) HSetNX(field k, value v) error {
 	return ctx.Rds.HSetNX(ctx.Context, ctx.Key, fieldStr, valStr).Err()
 }
 
-func (ctx *CtxHash[k, v]) HScan(cursor uint64, match string, count int64) (keys []k, values []v, cursorRet uint64, err error) {
+func (ctx *HashKey[k, v]) HScan(cursor uint64, match string, count int64) (keys []k, values []v, cursorRet uint64, err error) {
 	var (
 		cmd          *redis.ScanCmd
 		keyValueStrs []string
@@ -259,7 +289,7 @@ func (ctx *CtxHash[k, v]) HScan(cursor uint64, match string, count int64) (keys 
 	}
 	return keys, values, cursorRet, err
 }
-func (ctx *CtxHash[k, v]) HScanNoValues(cursor uint64, match string, count int64) (keys []k, cursorRet uint64, err error) {
+func (ctx *HashKey[k, v]) HScanNoValues(cursor uint64, match string, count int64) (keys []k, cursorRet uint64, err error) {
 	var (
 		cmd      *redis.ScanCmd
 		keysStrs []string

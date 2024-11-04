@@ -19,9 +19,9 @@ type CtxInterface interface {
 }
 
 var hKeyMap cmap.ConcurrentMap[string, CtxInterface] = cmap.New[CtxInterface]()
-var nonKey = NonKey[string, interface{}]()
+var nonKey = NewRedisKey[string, interface{}]()
 
-func CtxWitchValueSchemaChecked(key, keyType string, RedisDataSource string, msgpackData []byte) (db *Ctx[string, interface{}], value interface{}, err error) {
+func CtxWitchValueSchemaChecked(key, keyType string, RedisDataSource string, msgpackData []byte) (db *RedisKey[string, interface{}], value interface{}, err error) {
 	useModer, originalKey := false, key
 	originalKey = strings.SplitN(key, "@", 2)[0]
 	originalKey = strings.SplitN(originalKey, ":", 2)[0]
@@ -43,39 +43,39 @@ func CtxWitchValueSchemaChecked(key, keyType string, RedisDataSource string, msg
 	if disallowed, found := DisAllowedDataKeyNames[key]; found && disallowed {
 		return nil, nil, fmt.Errorf("key name is disallowed: " + key)
 	}
-	ctx := Ctx[string, interface{}]{context.Background(), RedisDataSource, nil, key, keyType, nonKey.MarshalValue, nonKey.UnmarshalValue, nonKey.UnmarshalValues, useModer}
+	ctx := RedisKey[string, interface{}]{context.Background(), RedisDataSource, nil, key, keyType, nonKey.MarshalValue, nonKey.UnmarshalValue, nonKey.UnmarshalValues, useModer, -1}
 	if ctx.Rds, exists = cfgredis.Servers.Get(RedisDataSource); !exists {
 		return nil, nil, fmt.Errorf("rds item unconfigured: " + RedisDataSource)
 	}
 	return &ctx, value, nil
 }
 
-func HashCtxWitchValueSchemaChecked(key string, RedisDataSource string, msgpackData []byte) (db *CtxHash[string, interface{}], value interface{}, err error) {
-	var ctx *Ctx[string, interface{}]
+func HashCtxWitchValueSchemaChecked(key string, RedisDataSource string, msgpackData []byte) (db *HashKey[string, interface{}], value interface{}, err error) {
+	var ctx *RedisKey[string, interface{}]
 	ctx, value, err = CtxWitchValueSchemaChecked(key, "hash", RedisDataSource, msgpackData)
 	if err != nil {
 		return nil, nil, err
 	}
-	return &CtxHash[string, interface{}]{*ctx}, value, nil
+	return &HashKey[string, interface{}]{*ctx}, value, nil
 }
-func ListCtxWitchValueSchemaChecked(key string, RedisDataSource string, msgpackData []byte) (db *CtxList[string, interface{}], value interface{}, err error) {
-	var ctx *Ctx[string, interface{}]
+func ListCtxWitchValueSchemaChecked(key string, RedisDataSource string, msgpackData []byte) (db *ListKey[string, interface{}], value interface{}, err error) {
+	var ctx *RedisKey[string, interface{}]
 	ctx, value, err = CtxWitchValueSchemaChecked(key, "list", RedisDataSource, msgpackData)
 	if err != nil {
 		return nil, nil, err
 	}
-	return &CtxList[string, interface{}]{*ctx}, value, nil
+	return &ListKey[string, interface{}]{*ctx}, value, nil
 }
-func StringCtxWitchValueSchemaChecked(key string, RedisDataSource string, msgpackData []byte) (db *CtxString[string, interface{}], value interface{}, err error) {
-	var ctx *Ctx[string, interface{}]
+func StringCtxWitchValueSchemaChecked(key string, RedisDataSource string, msgpackData []byte) (db *StringKey[string, interface{}], value interface{}, err error) {
+	var ctx *RedisKey[string, interface{}]
 	ctx, value, err = CtxWitchValueSchemaChecked(key, "string", RedisDataSource, msgpackData)
 	if err != nil {
 		return nil, nil, err
 	}
-	return &CtxString[string, interface{}]{*ctx}, value, nil
+	return &StringKey[string, interface{}]{*ctx}, value, nil
 }
 
-func (ctx *Ctx[k, v]) Validate() error {
+func (ctx *RedisKey[k, v]) Validate() error {
 	if disallowed, found := DisAllowedDataKeyNames[ctx.Key]; found && disallowed {
 		return fmt.Errorf("key name is disallowed: " + ctx.Key)
 	}
@@ -85,7 +85,7 @@ func (ctx *Ctx[k, v]) Validate() error {
 	return nil
 }
 
-func (ctx *Ctx[k, v]) CheckDataSchema(msgpackBytes []byte) (val interface{}, err error) {
+func (ctx *RedisKey[k, v]) CheckDataSchema(msgpackBytes []byte) (val interface{}, err error) {
 	if len(msgpackBytes) == 0 {
 		return nil, fmt.Errorf("msgpackBytes is empty")
 	}

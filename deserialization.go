@@ -11,7 +11,7 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 )
 
-func (ctx *Ctx[k, v]) toKeys(valStr []string) (keys []k, err error) {
+func (ctx *RedisKey[k, v]) toKeys(valStr []string) (keys []k, err error) {
 	if _, ok := interface{}(valStr).([]k); ok {
 		return interface{}(valStr).([]k), nil
 	}
@@ -43,7 +43,7 @@ func (ctx *Ctx[k, v]) toKeys(valStr []string) (keys []k, err error) {
 }
 
 // unmarhsal using msgpack
-func (ctx *Ctx[k, v]) toValuesFunc() func(valStrs []string) (value []v, err error) {
+func (ctx *RedisKey[k, v]) toValuesFunc() func(valStrs []string) (value []v, err error) {
 	valueStruct := reflect.TypeOf((*v)(nil)).Elem()
 	var typeofv = valueStruct.Kind()
 	isElemPtr := valueStruct.Kind() == reflect.Ptr
@@ -242,7 +242,7 @@ func (ctx *Ctx[k, v]) toValuesFunc() func(valStrs []string) (value []v, err erro
 		}
 	}
 }
-func (ctx *Ctx[k, v]) toValueFunc() func(valbytes []byte) (value v, err error) {
+func (ctx *RedisKey[k, v]) toValueFunc() func(valbytes []byte) (value v, err error) {
 	vTypeKind := reflect.TypeOf((*v)(nil)).Elem().Kind()
 	switch vTypeKind {
 	case reflect.Int64:
@@ -356,7 +356,7 @@ func (ctx *Ctx[k, v]) toValueFunc() func(valbytes []byte) (value v, err error) {
 
 }
 
-func (ctx *Ctx[k, v]) toKey(valBytes []byte) (key k, err error) {
+func (ctx *RedisKey[k, v]) toKey(valBytes []byte) (key k, err error) {
 	keyStruct := reflect.TypeOf((*k)(nil)).Elem()
 	isElemPtr := keyStruct.Kind() == reflect.Ptr
 	if isElemPtr {
