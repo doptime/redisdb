@@ -68,16 +68,19 @@ func (ctx *HashKey[k, v]) HSet(values ...interface{}) error {
 		return ctx.HMSet(kvMap)
 	}
 	// if Moder is not nil, apply modifiers to the values
-	if l := len(values); l >= 2 && l%2 == 0 && reflect.TypeOf(values).Kind() == reflect.Slice {
-		for i, l := 0, len(values); i < l; i += 2 {
-			if value, ok := values[i+1].(v); ok {
-				if ctx.UseModer {
-					ApplyModifiers(&value)
-				}
-			} else {
-				break
-			}
+	l := len(values)
+	if l < 2 || l%2 != 0 || reflect.TypeOf(values).Kind() != reflect.Slice {
+		return fmt.Errorf("valid values must be in the format of [key1, value1, key2, value2, ...]")
+	}
+	for i, l := 0, len(values); i < l; i += 2 {
+		_, keyok := values[i].(k)
+		value, valueok := values[i+1].(v)
+		if !keyok || !valueok {
+			return fmt.Errorf("valid values must be in the format of [key1, value1, key2, value2, ...]")
+		}
 
+		if ctx.UseModer {
+			ApplyModifiers(&value)
 		}
 	}
 
