@@ -43,7 +43,8 @@ func CtxWitchValueSchemaChecked(key, keyType string, RedisDataSource string, msg
 	if disallowed, found := DisAllowedDataKeyNames[key]; found && disallowed {
 		return nil, nil, fmt.Errorf("key name is disallowed: " + key)
 	}
-	ctx := RedisKey[string, interface{}]{context.Background(), RedisDataSource, nil, key, keyType, nonKey.MarshalValue, nonKey.UnmarshalValue, nonKey.UnmarshalValues, useModer, -1}
+	ctx := RedisKey[string, interface{}]{context.Background(), RedisDataSource, nil, key, keyType,
+		nonKey.SerializeKey, nonKey.SerializeValue, nonKey.DeserializeValue, nonKey.DeserializeValues, useModer, -1}
 	if ctx.Rds, exists = cfgredis.Servers.Get(RedisDataSource); !exists {
 		return nil, nil, fmt.Errorf("rds item unconfigured: " + RedisDataSource)
 	}

@@ -19,9 +19,10 @@ type RedisKey[k comparable, v any] struct {
 	Key     string
 	KeyType string
 
-	MarshalValue         func(value v) (msgpack string, err error)
-	UnmarshalValue       func(msgpack []byte) (value v, err error)
-	UnmarshalValues      func(msgpacks []string) (values []v, err error)
+	SerializeKey         func(value interface{}) (msgpack string, err error)
+	SerializeValue       func(value interface{}) (msgpack string, err error)
+	DeserializeValue     func(msgpack []byte) (value v, err error)
+	DeserializeValues    func(msgpacks []string) (values []v, err error)
 	UseModer             bool
 	PrimaryKeyFieldIndex int
 }
@@ -35,7 +36,8 @@ func (ctx *RedisKey[k, v]) V(value v) (ret v) {
 }
 
 func (ctx *RedisKey[k, v]) Duplicate(newKey, RdsSourceName string) (newCtx RedisKey[k, v]) {
-	return RedisKey[k, v]{ctx.Context, RdsSourceName, ctx.Rds, newKey, ctx.KeyType, ctx.MarshalValue, ctx.UnmarshalValue, ctx.UnmarshalValues, ctx.UseModer, ctx.PrimaryKeyFieldIndex}
+	return RedisKey[k, v]{ctx.Context, RdsSourceName, ctx.Rds, newKey, ctx.KeyType,
+		ctx.SerializeKey, ctx.SerializeValue, ctx.DeserializeValue, ctx.DeserializeValues, ctx.UseModer, ctx.PrimaryKeyFieldIndex}
 }
 
 func NewRedisKey[k comparable, v any](ops ...opSetter) *RedisKey[k, v] {
@@ -97,9 +99,10 @@ func (ctx *RedisKey[k, v]) applyOption(opt *Option) (err error) {
 		return fmt.Errorf("rds item unconfigured: " + ctx.RdsName)
 	}
 	ctx.Context = context.Background()
-	ctx.MarshalValue = ctx.toValueStrFun()
-	ctx.UnmarshalValue = ctx.toValueFunc()
-	ctx.UnmarshalValues = ctx.toValuesFunc()
+	ctx.SerializeKey = ctx.getSerializeFun(reflect.TypeOf((*v)(nil)).Elem().Kind())
+	ctx.SerializeValue = ctx.getSerializeFun(reflect.TypeOf((*v)(nil)).Elem().Kind())
+	ctx.DeserializeValue = ctx.getDeserializetoValueFunc()
+	ctx.DeserializeValues = ctx.toValuesFunc()
 	ctx.UseModer = RegisterStructModifiers(opt.Modifiers, reflect.TypeOf((*v)(nil)).Elem())
 
 	// don't register web data if it fully prepared
@@ -121,10 +124,10 @@ func (ctx *RedisKey[k, v]) toKeyValueStrs(keyValue ...interface{}) (keyValStrs [
 	// if key value is a map, convert it to key value slice
 	if kvMap, ok := keyValue[0].(map[k]v); ok {
 		for key, value := range kvMap {
-			if strkey, err = ctx.toKeyStr(key); err != nil {
+			if strkey, err = ctx.SerializeKey(key); err != nil {
 				return nil, err
 			}
-			if strvalue, err = ctx.MarshalValue(value); err != nil {
+			if strvalue, err = ctx.SerializeValue(value); err != nil {
 				return nil, err
 			}
 			keyValStrs = append(keyValStrs, strkey, strvalue)
@@ -139,10 +142,10 @@ func (ctx *RedisKey[k, v]) toKeyValueStrs(keyValue ...interface{}) (keyValStrs [
 				logger.Error().Any(" value must be of type v", value).Any("raw", keyValue[i+1]).Send()
 				return nil, fmt.Errorf("invalid value type in toKeyValueStrs")
 			}
-			if strkey, err = ctx.toKeyStr(key); err != nil {
+			if strkey, err = ctx.SerializeKey(key); err != nil {
 				return nil, err
 			}
-			if strvalue, err = ctx.MarshalValue(value); err != nil {
+			if strvalue, err = ctx.SerializeValue(value); err != nil {
 				return nil, err
 			}
 			keyValStrs = append(keyValStrs, strkey, strvalue)

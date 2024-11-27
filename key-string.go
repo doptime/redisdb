@@ -26,7 +26,7 @@ func (ctx *StringKey[k, v]) ConcatKey(fields ...interface{}) *StringKey[k, v] {
 	return &StringKey[k, v]{ctx.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
 }
 func (ctx *StringKey[k, v]) Get(Field k) (value v, err error) {
-	FieldStr, err := ctx.toKeyStr(Field)
+	FieldStr, err := ctx.SerializeKey(Field)
 	if err != nil {
 		return value, err
 	}
@@ -46,15 +46,15 @@ func (ctx *StringKey[k, v]) Get(Field k) (value v, err error) {
 	if err != nil {
 		return value, err
 	}
-	return ctx.UnmarshalValue(data)
+	return ctx.DeserializeValue(data)
 }
 
 func (ctx *StringKey[k, v]) Set(key k, value v, expiration time.Duration) error {
-	keyStr, err := ctx.toKeyStr(key)
+	keyStr, err := ctx.SerializeKey(key)
 	if err != nil {
 		return err
 	}
-	valStr, err := ctx.MarshalValue(value)
+	valStr, err := ctx.SerializeValue(value)
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func (ctx *StringKey[k, v]) Set(key k, value v, expiration time.Duration) error 
 }
 
 func (ctx *StringKey[k, v]) Del(key k) error {
-	keyStr, err := ctx.toKeyStr(key)
+	keyStr, err := ctx.SerializeKey(key)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func (ctx *StringKey[k, v]) GetAll(match string) (mapOut map[k]v, err error) {
 			logger.Info().AnErr("GetAll: key unmarshal error:", err).Msgf("Key: %s", ctx.Key)
 			continue
 		}
-		v, err := ctx.UnmarshalValue(val)
+		v, err := ctx.DeserializeValue(val)
 		if err != nil {
 			logger.Info().AnErr("GetAll: value unmarshal error:", err).Msgf("Key: %s", ctx.Key)
 			continue
@@ -111,11 +111,11 @@ func (ctx *StringKey[k, v]) SetAll(_map map[k]v) (err error) {
 	//HSet each element of _map to redis
 	pipe := ctx.Rds.Pipeline()
 	for k, v := range _map {
-		keyStr, err := ctx.toKeyStr(k)
+		keyStr, err := ctx.SerializeKey(k)
 		if err != nil {
 			return err
 		}
-		valStr, err := ctx.MarshalValue(v)
+		valStr, err := ctx.SerializeValue(v)
 		if err != nil {
 			return err
 		}

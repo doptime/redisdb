@@ -42,7 +42,7 @@ func (ctx *HashKey[k, v]) ConcatKey(fields ...interface{}) *HashKey[k, v] {
 }
 
 func (ctx *HashKey[k, v]) HGet(field k) (value v, err error) {
-	fieldStr, err := ctx.toKeyStr(field)
+	fieldStr, err := ctx.SerializeKey(field)
 	if err != nil {
 		return value, err
 	}
@@ -54,7 +54,7 @@ func (ctx *HashKey[k, v]) HGet(field k) (value v, err error) {
 	if err != nil {
 		return value, err
 	}
-	return ctx.UnmarshalValue(data)
+	return ctx.DeserializeValue(data)
 }
 
 // HSet accepts values in following formats:
@@ -120,7 +120,7 @@ func (ctx *HashKey[k, v]) HMSet(kvMap map[k]v) error {
 	return ctx.Rds.HSet(ctx.Context, ctx.Key, KeyValuesStrs).Err()
 }
 func (ctx *HashKey[k, v]) HExists(field k) (bool, error) {
-	fieldStr, err := ctx.toKeyStr(field)
+	fieldStr, err := ctx.SerializeKey(field)
 	if err != nil {
 		return false, err
 	}
@@ -138,7 +138,7 @@ func (ctx *HashKey[k, v]) HGetAll() (map[k]v, error) {
 		if err != nil {
 			continue
 		}
-		value, err := ctx.UnmarshalValue([]byte(v))
+		value, err := ctx.DeserializeValue([]byte(v))
 		if err != nil {
 			continue
 		}
@@ -175,7 +175,7 @@ func (ctx *HashKey[k, v]) HMGET(fields ...interface{}) (values []v, err error) {
 		}
 		rawValues[i] = val.(string)
 	}
-	return ctx.UnmarshalValues(rawValues)
+	return ctx.DeserializeValues(rawValues)
 }
 func (ctx *HashKey[k, v]) HLen() (length int64, err error) {
 	cmd := ctx.Rds.HLen(ctx.Context, ctx.Key)
@@ -231,7 +231,7 @@ func (ctx *HashKey[k, v]) HVals() ([]v, error) {
 	}
 	values := make([]v, len(result))
 	for i, v := range result {
-		value, err := ctx.UnmarshalValue([]byte(v))
+		value, err := ctx.DeserializeValue([]byte(v))
 		if err != nil {
 			continue
 		}
@@ -241,7 +241,7 @@ func (ctx *HashKey[k, v]) HVals() ([]v, error) {
 }
 
 func (ctx *HashKey[k, v]) HIncrBy(field k, increment int64) error {
-	fieldStr, err := ctx.toKeyStr(field)
+	fieldStr, err := ctx.SerializeKey(field)
 	if err != nil {
 		return err
 	}
@@ -249,18 +249,18 @@ func (ctx *HashKey[k, v]) HIncrBy(field k, increment int64) error {
 }
 
 func (ctx *HashKey[k, v]) HIncrByFloat(field k, increment float64) error {
-	fieldStr, err := ctx.toKeyStr(field)
+	fieldStr, err := ctx.SerializeKey(field)
 	if err != nil {
 		return err
 	}
 	return ctx.Rds.HIncrByFloat(ctx.Context, ctx.Key, fieldStr, increment).Err()
 }
 func (ctx *HashKey[k, v]) HSetNX(field k, value v) error {
-	fieldStr, err := ctx.toKeyStr(field)
+	fieldStr, err := ctx.SerializeKey(field)
 	if err != nil {
 		return err
 	}
-	valStr, err := ctx.MarshalValue(value)
+	valStr, err := ctx.SerializeValue(value)
 	if err != nil {
 		return err
 	}
@@ -280,7 +280,7 @@ func (ctx *HashKey[k, v]) HScan(cursor uint64, match string, count int64) (keys 
 	keyValueStrs, cursorRet, err = cmd.Result()
 	for i := 0; i < len(keyValueStrs); i += 2 {
 		k, err := ctx.toKey([]byte(keyValueStrs[i]))
-		v, err1 := ctx.UnmarshalValue([]byte(keyValueStrs[i+1]))
+		v, err1 := ctx.DeserializeValue([]byte(keyValueStrs[i+1]))
 		if err != nil || err1 != nil {
 			continue
 		}

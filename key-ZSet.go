@@ -149,7 +149,7 @@ func (ctx *ZSetKey[k, v]) ZRemRangeByScore(min, max string) error {
 }
 
 func (ctx *ZSetKey[k, v]) ZIncrBy(increment float64, member v) error {
-	memberBytes, err := ctx.MarshalValue(member)
+	memberBytes, err := ctx.SerializeValue(member)
 	if err != nil {
 		return err
 	}
@@ -179,7 +179,7 @@ func (ctx *ZSetKey[k, v]) ZScan(cursor uint64, match string, count int64) (value
 	strs, rcursor, err = ctx.Rds.ZScan(ctx.Context, ctx.Key, cursor, match, count).Result()
 	values = make([]v, 0, len(strs))
 	for _, s := range strs {
-		if _v, err := ctx.UnmarshalValue([]byte(s)); err == nil {
+		if _v, err := ctx.DeserializeValue([]byte(s)); err == nil {
 			values = append(values, _v)
 		}
 	}

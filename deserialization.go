@@ -242,7 +242,8 @@ func (ctx *RedisKey[k, v]) toValuesFunc() func(valStrs []string) (value []v, err
 		}
 	}
 }
-func (ctx *RedisKey[k, v]) toValueFunc() func(valbytes []byte) (value v, err error) {
+
+func (ctx *RedisKey[k, v]) getDeserializetoValueFunc() func(valbytes []byte) (value v, err error) {
 	vTypeKind := reflect.TypeOf((*v)(nil)).Elem().Kind()
 	switch vTypeKind {
 	case reflect.Int64:
@@ -367,7 +368,7 @@ func (ctx *RedisKey[k, v]) toKey(valBytes []byte) (key k, err error) {
 		if keyStruct.Kind() == reflect.String {
 			return reflect.ValueOf(string(valBytes)).Interface().(k), nil
 		}
-		err = json.Unmarshal(valBytes, &key)
+		err = msgpack.Unmarshal(valBytes, &key)
 		return key, err
 	}
 }

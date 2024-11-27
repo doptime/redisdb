@@ -57,7 +57,7 @@ func (ctx *ListKey[k, v]) RPop() (ret v, err error) {
 	if err != nil {
 		return ret, err
 	}
-	return ctx.UnmarshalValue(data)
+	return ctx.DeserializeValue(data)
 }
 
 func (ctx *ListKey[k, v]) LPop() (ret v, err error) {
@@ -69,7 +69,7 @@ func (ctx *ListKey[k, v]) LPop() (ret v, err error) {
 	if err != nil {
 		return ret, err
 	}
-	return ctx.UnmarshalValue(data)
+	return ctx.DeserializeValue(data)
 }
 
 func (ctx *ListKey[k, v]) LRange(start, stop int64) ([]v, error) {
@@ -79,7 +79,7 @@ func (ctx *ListKey[k, v]) LRange(start, stop int64) ([]v, error) {
 	}
 	values := make([]v, len(cmd.Val()))
 	for i, v := range cmd.Val() {
-		value, err := ctx.UnmarshalValue([]byte(v))
+		value, err := ctx.DeserializeValue([]byte(v))
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +89,7 @@ func (ctx *ListKey[k, v]) LRange(start, stop int64) ([]v, error) {
 }
 
 func (ctx *ListKey[k, v]) LRem(count int64, param v) error {
-	val, err := ctx.MarshalValue(param)
+	val, err := ctx.SerializeValue(param)
 	if err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func (ctx *ListKey[k, v]) LRem(count int64, param v) error {
 }
 
 func (ctx *ListKey[k, v]) LSet(index int64, param v) error {
-	val, err := ctx.MarshalValue(param)
+	val, err := ctx.SerializeValue(param)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func (ctx *ListKey[k, v]) BLPop(timeout time.Duration) (ret v, err error) {
 	if err != nil {
 		return ret, err
 	}
-	return ctx.UnmarshalValue([]byte(data[1]))
+	return ctx.DeserializeValue([]byte(data[1]))
 }
 
 func (ctx *ListKey[k, v]) BRPop(timeout time.Duration) (ret v, err error) {
@@ -125,7 +125,7 @@ func (ctx *ListKey[k, v]) BRPop(timeout time.Duration) (ret v, err error) {
 	if err != nil {
 		return ret, err
 	}
-	return ctx.UnmarshalValue([]byte(data[1]))
+	return ctx.DeserializeValue([]byte(data[1]))
 }
 
 func (ctx *ListKey[k, v]) BRPopLPush(destination string, timeout time.Duration) (ret v, err error) {
@@ -137,15 +137,15 @@ func (ctx *ListKey[k, v]) BRPopLPush(destination string, timeout time.Duration) 
 	if err != nil {
 		return ret, err
 	}
-	return ctx.UnmarshalValue(data)
+	return ctx.DeserializeValue(data)
 }
 
 func (ctx *ListKey[k, v]) LInsertBefore(pivot, param v) error {
-	pivotStr, err := ctx.MarshalValue(pivot)
+	pivotStr, err := ctx.SerializeValue(pivot)
 	if err != nil {
 		return err
 	}
-	valStr, err := ctx.MarshalValue(param)
+	valStr, err := ctx.SerializeValue(param)
 	if err != nil {
 		return err
 	}
@@ -153,11 +153,11 @@ func (ctx *ListKey[k, v]) LInsertBefore(pivot, param v) error {
 }
 
 func (ctx *ListKey[k, v]) LInsertAfter(pivot, param v) error {
-	pivotStr, err := ctx.MarshalValue(pivot)
+	pivotStr, err := ctx.SerializeValue(pivot)
 	if err != nil {
 		return err
 	}
-	valStr, err := ctx.MarshalValue(param)
+	valStr, err := ctx.SerializeValue(param)
 	if err != nil {
 		return err
 	}
@@ -170,7 +170,7 @@ func (ctx *ListKey[k, v]) Sort(sort *redis.Sort) ([]v, error) {
 	}
 	values := make([]v, len(cmd.Val()))
 	for i, v := range cmd.Val() {
-		value, err := ctx.UnmarshalValue([]byte(v))
+		value, err := ctx.DeserializeValue([]byte(v))
 		if err != nil {
 			return nil, err
 		}
@@ -192,7 +192,7 @@ func (ctx *ListKey[k, v]) LIndex(index int64) (ret v, err error) {
 	if err != nil {
 		return ret, err
 	}
-	return ctx.UnmarshalValue(data)
+	return ctx.DeserializeValue(data)
 }
 
 func (ctx *ListKey[k, v]) LLen() (int64, error) {

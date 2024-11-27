@@ -24,10 +24,10 @@ func (ctx *RedisKey[k, v]) Set(key k, param v, expiration time.Duration) (err er
 		keyStr string
 		valStr string
 	)
-	if keyStr, err = ctx.toKeyStr(key); err != nil {
+	if keyStr, err = ctx.SerializeKey(key); err != nil {
 		return err
 	}
-	if valStr, err = ctx.MarshalValue(param); err != nil {
+	if valStr, err = ctx.SerializeValue(param); err != nil {
 		return err
 	} else {
 		status := ctx.Rds.Set(ctx.Context, ctx.Key+":"+keyStr, valStr, expiration)
@@ -40,7 +40,7 @@ func (ctx *RedisKey[k, v]) Del(key k) (err error) {
 	var (
 		keyStr string
 	)
-	if keyStr, err = ctx.toKeyStr(key); err != nil {
+	if keyStr, err = ctx.SerializeKey(key); err != nil {
 		return err
 	}
 	status := ctx.Rds.Del(ctx.Context, ctx.Key+":"+keyStr)

@@ -22,7 +22,7 @@ func (ctx *SetKey[k, v]) ConcatKey(fields ...interface{}) *SetKey[k, v] {
 
 // append to Set
 func (ctx *SetKey[k, v]) SAdd(param v) (err error) {
-	valStr, err := ctx.MarshalValue(param)
+	valStr, err := ctx.SerializeValue(param)
 	if err != nil {
 		return err
 	}
@@ -34,14 +34,14 @@ func (ctx *SetKey[k, v]) SCard() (int64, error) {
 }
 
 func (ctx *SetKey[k, v]) SRem(param v) error {
-	valStr, err := ctx.MarshalValue(param)
+	valStr, err := ctx.SerializeValue(param)
 	if err != nil {
 		return err
 	}
 	return ctx.Rds.SRem(ctx.Context, ctx.Key, valStr).Err()
 }
 func (ctx *SetKey[k, v]) SIsMember(param v) (bool, error) {
-	valStr, err := ctx.MarshalValue(param)
+	valStr, err := ctx.SerializeValue(param)
 	if err != nil {
 		return false, err
 	}
@@ -53,7 +53,7 @@ func (ctx *SetKey[k, v]) SMembers() ([]v, error) {
 	if err := cmd.Err(); err != nil {
 		return nil, err
 	}
-	return ctx.UnmarshalValues(cmd.Val())
+	return ctx.DeserializeValues(cmd.Val())
 }
 func (ctx *SetKey[k, v]) SScan(cursor uint64, match string, count int64) ([]v, uint64, error) {
 	cmd := ctx.Rds.SScan(ctx.Context, ctx.Key, cursor, match, count)
@@ -64,7 +64,7 @@ func (ctx *SetKey[k, v]) SScan(cursor uint64, match string, count int64) ([]v, u
 	if err != nil {
 		return nil, 0, err
 	}
-	values, err := ctx.UnmarshalValues(Strs)
+	values, err := ctx.DeserializeValues(Strs)
 	if err != nil {
 		return nil, 0, err
 	}
