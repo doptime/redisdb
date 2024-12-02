@@ -9,10 +9,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// HashKey represents a Redis hash key.
 type HashKey[k comparable, v any] struct {
 	RedisKey[k, v]
 }
 
+// NewHashKey creates a new HashKey with the given options.
 func NewHashKey[k comparable, v any](ops ...opSetter) *HashKey[k, v] {
 	ctx := &HashKey[k, v]{}
 	ctx.KeyType = "hash"
