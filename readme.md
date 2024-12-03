@@ -1,12 +1,201 @@
-## redisdb 
-解决的问题
-把Redis当做一个数据库来使用。
+## RedisDB Documentation
 
-可以使用Save等极简地命令来保存数据对象。 不需要写CRUD代码。不需要写增删查改的代码。
+RedisDB is a package designed to simplify and enhance the interaction with Redis in Go applications. It provides a high-level, type-safe abstraction for various Redis data structures, including hashes, lists, strings, sets, and sorted sets. By leveraging generics and the msgpack library, RedisDB ensures efficient serialization and deserialization of data, reducing the likelihood of errors and making your code more maintainable.
 
-同样的代码可以在HTTP中使用。 数据内容在HTTP中受权限保护
+### Key Features
 
-支持Schema定义。来保证数据的长期可维护性。 支持查看文档。以便可以快速复制粘贴代码到js中使用。
+- **Type Safety:** RedisDB uses generics to specify key and value types, preventing type mismatches and ensuring that your data is handled correctly.
+- **Automatic Serialization:** Data is automatically serialized using msgpack, eliminating the need for manual marshaling and unmarshaling.
+- **Modifiers and Data Validation:** Supports modifiers for fields in your structs, allowing for tasks like trimming spaces, converting to lowercase, and setting default values during serialization and deserialization.
+- **Documentation Generation:** Automatically generates documentation for your data structures, making it easier to understand and use them in your application.
 
+### Getting Started
 
+To get started with RedisDB, you need to have Redis installed and running. Additionally, ensure that you have the necessary dependencies installed in your Go project.
 
+### Installation
+
+You can install the RedisDB package using the following command:
+
+```bash
+go get github.com/doptime/RedisDB
+```
+
+### Configuration
+
+Before using RedisDB, you need to configure your Redis data sources. This can be done using the `cfgredis` package.
+
+### Example Usage
+
+#### HashKey
+
+HashKey is used to interact with Redis hash keys, which are maps between string fields and string values.
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/doptime/RedisDB"
+)
+
+type User struct {
+    ID   string `msgpack:"id"`
+    Name string `msgpack:"name"`
+}
+
+func main() {
+    keyUser := RedisDB.NewHashKey[string, *User](RedisDB.WithKey("users"))
+
+    user := &User{ID: "1", Name: "Alice"}
+    keyUser.HSet("1", user)
+
+    retrievedUser, err := keyUser.HGet("1")
+    if err == nil {
+        fmt.Println("Retrieved User:", retrievedUser.Name)
+    }
+}
+```
+
+#### ListKey
+
+ListKey is designed for working with Redis list keys, which are ordered collections of strings.
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/doptime/RedisDB"
+)
+
+type Item struct {
+    ID   string `msgpack:"id"`
+    Name string `msgpack:"name"`
+}
+
+func main() {
+    keyList := RedisDB.NewListKey[string, *Item](RedisDB.WithKey("items"))
+
+    item := &Item{ID: "1", Name: "Item1"}
+    keyList.RPush(item)
+
+    poppedItem, err := keyList.RPop()
+    if err == nil {
+        fmt.Println("Popped Item:", poppedItem.Name)
+    }
+}
+```
+
+#### StringKey
+
+StringKey is used for simple key-value pairs in Redis.
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/doptime/RedisDB"
+)
+
+type Config struct {
+    Host     string `msgpack:"host"`
+    Port     int    `msgpack:"port"`
+    Enabled  bool   `msgpack:"enabled"`
+}
+
+func main() {
+    keyConfig := RedisDB.NewStringKey[string, *Config](RedisDB.WithKey("configs"))
+
+    config := &Config{Host: "example.com", Port: 8080, Enabled: true}
+    keyConfig.Set("config1", config, time.Hour*24)
+
+    retrievedConfig, err := keyConfig.Get("config1")
+    if err == nil {
+        fmt.Println("Retrieved Config:", retrievedConfig.Host, retrievedConfig.Port, retrievedConfig.Enabled)
+    }
+}
+```
+
+#### SetKey
+
+SetKey is for managing Redis set keys, which store unique unordered strings.
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/doptime/RedisDB"
+)
+
+type Tag struct {
+    ID   string `msgpack:"id"`
+    Name string `msgpack:"name"`
+}
+
+func main() {
+    keyTag := RedisDB.NewSetKey[string, *Tag](RedisDB.WithKey("tags"))
+
+    tag := &Tag{ID: "1", Name: "Technology"}
+    keyTag.SAdd(tag)
+
+    tags, err := keyTag.SMembers()
+    if err == nil {
+        for _, tag := range tags {
+            fmt.Println("Tag ID:", tag.ID, "Name:", tag.Name)
+        }
+    }
+}
+```
+
+#### ZSetKey
+
+ZSetKey is for working with Redis sorted sets, which are collections of unique strings with associated scores.
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/doptime/RedisDB"
+)
+
+type ScoredItem struct {
+    ID   string  `msgpack:"id"`
+    Score float64 `msgpack:"score"`
+}
+
+func main() {
+    keyScoredItem := RedisDB.NewZSetKey[string, *ScoredItem](RedisDB.WithKey("scored_items"))
+
+    item := &ScoredItem{ID: "1", Score: 3.5}
+    keyScoredItem.ZAdd(RedisDB.redis.Z{Member: item, Score: item.Score})
+
+    items, err := keyScoredItem.ZRange(0, -1)
+    if err == nil {
+        for _, item := range items {
+            fmt.Println("Item ID:", item.ID, "Score:", item.Score)
+        }
+    }
+}
+```
+
+### Documentation
+
+For detailed documentation on each data structure type, refer to the respective documentation files:
+
+- [HashKey Documentation](doc_hashkey.md)
+- [ListKey Documentation](doc_listKey.md)
+- [SetKey Documentation](doc_setkey.md)
+- [StringKey Documentation](doc_stringkey.md)
+- [ZSetKey Documentation](doc_zsetkey.md)
+
+### Error Handling
+
+Most methods in RedisDB return errors that you should check to handle failures gracefully. Always ensure to handle errors to maintain the robustness of your application.
+
+### Conclusion
+
+RedisDB provides a powerful and type-safe way to interact with Redis in Go. By using generics and automatic serialization, it reduces the complexity and potential errors in your code. Explore the various data structures and their methods to fully leverage the capabilities of Redis in your applications.

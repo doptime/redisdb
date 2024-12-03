@@ -162,3 +162,44 @@ func (ctx *RedisKey[k, v]) MsgpackUnmarshalValue(msgpack []byte) (rets interface
 func (ctx *RedisKey[k, v]) MsgpackUnmarshalKeyValues(msgpack []byte) (rets interface{}, err error) {
 	return nil, nil
 }
+
+func (ctx *RedisKey[k, v]) Keys() (out []k, err error) {
+	var (
+		cmd  *redis.StringSliceCmd
+		keys []string
+	)
+	cmd = ctx.Rds.Keys(ctx.Context, ctx.Key+":*")
+	if keys, err = cmd.Result(); err != nil {
+		return nil, err
+	}
+	return ctx.toKeys(keys)
+}
+
+// for the reason of protection, both ctx.Key & Key are required. the avoid set Hash table to the wrong type , and thus leading to data loss.
+func (ctx *RedisKey[k, v]) Set(key k, param v, expiration time.Duration) (err error) {
+	var (
+		keyStr string
+		valStr string
+	)
+	if keyStr, err = ctx.SerializeKey(key); err != nil {
+		return err
+	}
+	if valStr, err = ctx.SerializeValue(param); err != nil {
+		return err
+	} else {
+		status := ctx.Rds.Set(ctx.Context, ctx.Key+":"+keyStr, valStr, expiration)
+		return status.Err()
+	}
+}
+
+// for the reason of protection, both ctx.Key & Key are required. the avoid set Hash table to the wrong type , and thus leading to data loss.
+func (ctx *RedisKey[k, v]) Del(key k) (err error) {
+	var (
+		keyStr string
+	)
+	if keyStr, err = ctx.SerializeKey(key); err != nil {
+		return err
+	}
+	status := ctx.Rds.Del(ctx.Context, ctx.Key+":"+keyStr)
+	return status.Err()
+}
