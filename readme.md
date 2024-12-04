@@ -1,6 +1,8 @@
 ## RedisDB Documentation
 
-RedisDB is a package designed to simplify and enhance the interaction with Redis in Go applications. It provides a high-level, type-safe abstraction for various Redis data structures, including hashes, lists, strings, sets, and sorted sets. By leveraging generics and the msgpack library, RedisDB ensures efficient serialization and deserialization of data, reducing the likelihood of errors and making your code more maintainable.
+RedisDB is a Redis based database package in Golang. 
+The basic idea beyond is to making code lean.
+It provides a high-level concise abstraction for various Redis data structures, hashes, lists, strings... By leveraging generics and the msgpack library, RedisDB ensures efficient serialization and deserialization of data, reducing the likelihood of errors and making your code more maintainable.
 
 ### Key Features
 
@@ -18,7 +20,7 @@ To get started with RedisDB, you need to have Redis installed and running. Addit
 You can install the RedisDB package using the following command:
 
 ```bash
-go get github.com/doptime/RedisDB
+go get github.com/doptime/redisdb
 ```
 
 ### Configuration
@@ -36,7 +38,7 @@ package main
 
 import (
     "fmt"
-    "github.com/doptime/RedisDB"
+    "github.com/doptime/redisdb"
 )
 
 type User struct {
@@ -45,7 +47,7 @@ type User struct {
 }
 
 func main() {
-    keyUser := RedisDB.NewHashKey[string, *User](RedisDB.WithKey("users"))
+    keyUser :=  redisdb.NewHashKey[string, *User]( redisdb.WithKey("users"))
 
     user := &User{ID: "1", Name: "Alice"}
     keyUser.HSet("1", user)
@@ -66,7 +68,7 @@ package main
 
 import (
     "fmt"
-    "github.com/doptime/RedisDB"
+    "github.com/doptime/redisdb"
 )
 
 type Item struct {
@@ -75,7 +77,7 @@ type Item struct {
 }
 
 func main() {
-    keyList := RedisDB.NewListKey[string, *Item](RedisDB.WithKey("items"))
+    keyList :=  redisdb.NewListKey[string, *Item]( redisdb.WithKey("items"))
 
     item := &Item{ID: "1", Name: "Item1"}
     keyList.RPush(item)
@@ -96,7 +98,7 @@ package main
 
 import (
     "fmt"
-    "github.com/doptime/RedisDB"
+    "github.com/doptime/redisdb"
 )
 
 type Config struct {
@@ -106,7 +108,7 @@ type Config struct {
 }
 
 func main() {
-    keyConfig := RedisDB.NewStringKey[string, *Config](RedisDB.WithKey("configs"))
+    keyConfig :=  redisdb.NewStringKey[string, *Config]( redisdb.WithKey("configs"))
 
     config := &Config{Host: "example.com", Port: 8080, Enabled: true}
     keyConfig.Set("config1", config, time.Hour*24)
@@ -127,7 +129,7 @@ package main
 
 import (
     "fmt"
-    "github.com/doptime/RedisDB"
+    "github.com/doptime/redisdb"
 )
 
 type Tag struct {
@@ -136,7 +138,7 @@ type Tag struct {
 }
 
 func main() {
-    keyTag := RedisDB.NewSetKey[string, *Tag](RedisDB.WithKey("tags"))
+    keyTag :=  redisdb.NewSetKey[string, *Tag]( redisdb.WithKey("tags"))
 
     tag := &Tag{ID: "1", Name: "Technology"}
     keyTag.SAdd(tag)
@@ -159,7 +161,7 @@ package main
 
 import (
     "fmt"
-    "github.com/doptime/RedisDB"
+    "github.com/doptime/redisdb"
 )
 
 type ScoredItem struct {
@@ -168,10 +170,10 @@ type ScoredItem struct {
 }
 
 func main() {
-    keyScoredItem := RedisDB.NewZSetKey[string, *ScoredItem](RedisDB.WithKey("scored_items"))
+    keyScoredItem :=  redisdb.NewZSetKey[string, *ScoredItem]( redisdb.WithKey("scored_items"))
 
     item := &ScoredItem{ID: "1", Score: 3.5}
-    keyScoredItem.ZAdd(RedisDB.redis.Z{Member: item, Score: item.Score})
+    keyScoredItem.ZAdd( redisdb.redis.Z{Member: item, Score: item.Score})
 
     items, err := keyScoredItem.ZRange(0, -1)
     if err == nil {
