@@ -7,6 +7,5 @@ type ExampleStruct struct {
     UnixTime int64     `mod:"unixtime=ms,force"`                   // Sets Unix time in milliseconds (forced)
     Counter  int64     `mod:"counter,force"`                       // Increments counter (forced)
     Email    string    `mod:"lowercase,trim"`                      // Trims spaces and converts to lowercase
-    Created  time.Time `mod:"dateFormat=2006-01-02T15:04:05Z07:00"`// Formats date according to specified layout
 }
 ```

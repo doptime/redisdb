@@ -31,14 +31,6 @@ func (ctx *ListKey[k, v]) RPush(param ...v) error
 func (ctx *ListKey[k, v]) LPush(param ...v) error
 ```
 
-#### Example
-
-```go
-item := &Item{ID: "1", Name: "Item1"}
-keyList.RPush(item)
-keyList.LPush(item)
-```
-
 ### Popping Elements
 
 Remove and retrieve elements from the list using `RPop` or `LPop`.
@@ -46,15 +38,6 @@ Remove and retrieve elements from the list using `RPop` or `LPop`.
 ```go
 func (ctx *ListKey[k, v]) RPop() (ret v, err error)
 func (ctx *ListKey[k, v]) LPop() (ret v, err error)
-```
-
-#### Example
-
-```go
-poppedItem, err := keyList.RPop()
-if err == nil {
-    fmt.Println("Popped Item:", poppedItem.Name)
-}
 ```
 
 ## Advanced Operations
@@ -67,32 +50,12 @@ Retrieve elements from the list between specified indices using `LRange`.
 func (ctx *ListKey[k, v]) LRange(start, stop int64) ([]v, error)
 ```
 
-#### Example
-
-```go
-items, err := keyList.LRange(0, -1)
-if err == nil {
-    for _, item := range items {
-        fmt.Println("Item:", item.Name)
-    }
-}
-```
-
 ### Removing Elements
 
 Remove specific elements from the list using `LRem`.
 
 ```go
 func (ctx *ListKey[k, v]) LRem(count int64, param v) error
-```
-
-#### Example
-
-```go
-err := keyList.LRem(1, &Item{ID: "1", Name: "Item1"})
-if err == nil {
-    fmt.Println("Element removed successfully.")
-}
 ```
 
 ### Trimming the List
@@ -103,48 +66,16 @@ Trim the list to retain only elements between specified indices using `LTrim`.
 func (ctx *ListKey[k, v]) LTrim(start, stop int64) error
 ```
 
-#### Example
-
-```go
-err := keyList.LTrim(0, 9)
-if err == nil {
-    fmt.Println("List trimmed to 10 elements.")
-}
-```
-
 ## Modifiers and Data Validation
 
-The `redisdb` package supports modifiers that can be applied to the fields of your struct during serialization and deserialization. This is particularly useful for tasks like trimming spaces, converting to lowercase, setting default values, etc.
-
-Modifiers are defined using struct tags. For example:
-
-```go
-type Item struct {
-    ID   string `msgpack:"id" mod:"trim,lowercase"`
-    Name string `msgpack:"name" mod:"trim"`
-}
-```
-
-In this example, the `ID` field will be trimmed and converted to lowercase before being stored in Redis, and the `Name` field will be trimmed.
-
-### Registering Custom Modifiers
-
-You can register custom modifiers by providing a map of modifier names to modifier functions when creating the `ListKey` context.
-
-```go
-extraModifiers := map[string]ModifierFunc{
-    "custom": func(fieldValue interface{}, tagParam string) (interface{}, error) {
-        // Custom modification logic
-    },
-}
-keyList := redisdb.NewListKey[string, *Item](redisdb.WithModifier(extraModifiers))
-```
+For information on how to use modifiers with `ListKey`, please refer to the [Modifier Example](doc_mod_example.md).
 
 ## Example Usage
 
 ### Defining a Struct with Modifiers
 
 ```go
+
 type Item struct {
     ID   string `msgpack:"id" mod:"trim,lowercase"`
     Name string `msgpack:"name" mod:"trim"`
@@ -154,6 +85,7 @@ type Item struct {
 ### Creating a ListKey Context
 
 ```go
+
 keyList := redisdb.NewListKey[string, *Item](redisdb.WithKey("items"))
 ```
 

@@ -1,0 +1,2733 @@
+Alright, I've got this system called RedisDB, and it's a Golang package designed to interact with Redis in a type-safe manner using generics. It seems to provide abstractions for different Redis data structures like hashes, lists, sets, strings, and sorted sets. The main goal is to make Redis usage simpler and more efficient for Go developers.
+
+## Describing the System
+
+### Key Components
+
+1. **HashKey**: Manages Redis hash keys, which are essentially maps from string fields to string values. It's useful for representing complex objects or dictionaries.
+
+2. **ListKey**: Handles Redis lists, which are collections of strings ordered in a FIFO or LIFO manner.
+
+3. **SetKey**: Manages Redis sets, which are collections of unique strings.
+
+4. **StringKey**: Deals with Redis strings, the simplest data type in Redis, used for storing single string values.
+
+5. **ZSetKey**: Manages Redis sorted sets, which are sets of unique strings ordered by a floating-point score.
+
+### Features
+
+- **Type Safety**: Uses generics to specify key and value types, reducing type errors.
+
+- **Automatic Serialization**: Leverages the msgpack library for efficient serialization and deserialization of data.
+
+- **Modifiers and Data Validation**: Supports modifiers for fields in structs, allowing tasks like trimming spaces, converting to lowercase, and setting default values.
+
+- **Documentation Generation**: Automatically generates documentation for data structures, aiding in understanding and usage.
+
+### Structure
+
+- **CtxMap.go**: Contains context mapping and validation functions.
+
+- **deserialization.go**: Handles deserialization of Redis data to Go types.
+
+- **key.go**: Provides utility functions for generating key names and concatenating keys with fields.
+
+- **key_hash.go**, **key_list.go**, **key_redis.go**, **key_set.go**, **key_string.go**, **key_zset.go**: Implement specific Redis data structure abstractions.
+
+- **mod.go**: Defines modifiers for struct fields.
+
+- **options.go**: Manages options for creating different contexts.
+
+- **readme.md**: Provides an overview and example usage of the package.
+
+- **serialization.go**: Handles serialization of Go types to strings for storage in Redis.
+
+- **webdataschema.go**: Manages web data schemas and documentation.
+
+## Deep Analysis of the System
+
+### Strengths
+
+1. **Type Safety**: By using generics, the package ensures that the keys and values are of the correct types, which prevents many common errors.
+
+2. **Efficiency**: Using msgpack for serialization is efficient in terms of both speed and storage space compared to JSON.
+
+3. **Modifiers**: The modifier system allows for automatic data validation and transformation, reducing boilerplate code.
+
+4. **Documentation**: Automatic documentation generation helps in maintaining and understanding the data structures used in the application.
+
+### Weaknesses
+
+1. **Complexity**: The use of generics and reflection might introduce complexity that could be daunting for some developers.
+
+2. **Performance Overhead**: Reflection in Go can have performance implications, although msgpack serialization is efficient.
+
+3. **Limited Data Structure Support**: While it covers many Redis data structures, some advanced features or less common data structures might not be supported.
+
+4. **Dependency on msgpack**: Developers might prefer other serialization formats like JSON, which could limit the package's appeal.
+
+### Opportunities
+
+1. **Integration with Cloud Services**: Providing seamless integration with popular cloud Redis services could attract a broader audience.
+
+2. **Enhanced Modifier System**: Expanding the modifier system with more built-in modifiers and allowing easier registration of custom modifiers.
+
+3. **Advanced Query Support**: Adding support for more complex queries and operations specific to certain data structures.
+
+4. **Compatibility with RedisJSON**: If RedisJSON is used, providing abstractions for JSON data in Redis could be beneficial.
+
+### Threats
+
+1. **Competing Packages**: There are other Go packages and libraries for interacting with Redis, some of which might offer more features or better performance.
+
+2. **Redis Updates**: Changes in Redis versions could require updates to the package to maintain compatibility.
+
+3. **Security Concerns**: Ensuring that the package does not introduce security vulnerabilities in data handling or serialization.
+
+## Relationship with the Intent
+
+The intent is to make RedisDB a greater project, potentially by adding support for primary keys in structs and automatically managing them in a separate hash key. This would involve creating a new context for primary keys and ensuring that they are handled correctly across different operations.
+
+### Analysis
+
+1. **Primary Key Support**: Adding primary key support can help in managing unique identifiers for entities, which is crucial for many applications.
+
+2. **Automatic Primary Key Management**: Storing primary keys in a separate hash key can help in quickly retrieving or checking the existence of entities based on their primary keys.
+
+3. **Integration with Existing Abstractions**: This new feature should seamlessly integrate with existing data structure abstractions without complicating the API.
+
+## Solution Proposal
+
+### Approach
+
+1. **Define Primary Key Tag**: Introduce a new tag in structs to denote the primary key field.
+
+2. **Auto-Generate Primary Key Context**: Create a separate HashKey context for primary keys, allowing quick lookups.
+
+3. **Automatic Primary Key Handling**: Ensure that when entities are saved or deleted, their primary keys are automatically managed in the primary key hash.
+
+### Implementation Steps
+
+1. **Extend Struct Modifiers**:
+
+- Introduce a new tag, e.g., `primarykey`, to identify the primary key field in a struct.
+
+- Modify the `RegisterStructModifiers` function to handle this new tag.
+
+2. **Create Primary Key Context**:
+
+- Use a HashKey to store primary keys as fields and their corresponding entity IDs as values.
+
+- For example, `keyPrimarykey := NewHashKey[string, int64]().WithKey("Primarykey")`.
+
+3. **Automate Primary Key Operations**:
+
+- When an entity is saved, automatically add its primary key to the primary key hash.
+
+- When an entity is deleted, remove its primary key from the hash.
+
+4. **Provide Utility Functions**:
+
+- Functions to check if a primary key exists.
+
+- Functions to retrieve entity IDs based on primary keys.
+
+### Example Usage
+
+```go
+type User struct {
+    ID       string `msgpack:"id" primarykey:"true"`
+    Name     string `msgpack:"name"`
+    Age      int    `msgpack:"age"`
+}
+
+keyUser := NewHashKey[string, *User](WithKey("users"))
+
+// Saving a user
+user := &User{ID: "1", Name: "Alice", Age: 30}
+keyUser.Save(user)
+
+// Deleting a user
+keyUser.Del("1")
+```
+
+### Considerations
+
+1. **Performance Impact**: Adding automatic primary key management could introduce performance overhead due to additional Redis operations. It's essential to minimize this impact.
+
+2. **Data Consistency**: Ensure that primary keys are consistently managed across save and delete operations to avoid inconsistencies.
+
+3. **User Documentation**: Update the documentation to include information about primary key support and how to use it.
+
+4. **Testing**: Implement comprehensive tests to verify that primary key management works as expected in various scenarios.
+
+## Final Thoughts
+
+Adding primary key support to the RedisDB package can significantly enhance its functionality, making it more suitable for applications that require efficient management of unique identifiers. By automating primary key operations, the package can provide a higher level of abstraction, further simplifying Redis usage for Go developers. This feature aligns well with the overall intent of making RedisDB a greater project by offering more powerful and convenient tools for data management.
+
+## References
+
+1. [Redis Go Client](https://pkg.go.dev/github.com/redis/go-redis/v9)
+2. [Msgpack for Go](https://pkg.go.dev/github.com/vmihailenco/msgpack/v5)
+3. [Concurrent Map for Go](https://pkg.go.dev/github.com/orcaman/concurrent-map/v2)
+4. [Docusaurus Documentation Site](https://docusaurus.io/)
+
+## Contributors
+
+- [John D. Rockefeller](https://en.wikipedia.org/wiki/John_D._Rockefeller)
+- [Nikola Tesla](https://en.wikipedia.org/wiki/Nikola_Tesla)
+- [Claude Shannon](https://en.wikipedia.org/wiki/Claude_Shannon)
+- [Vannevar Bush](https://en.wikipedia.org/wiki/Vannevar_Bush)
+- [Alan Turing](https://en.wikipedia.org/wiki/Alan_Turing)
+
+## License
+
+[MIT License](https://opensource.org/licenses/MIT)
+
+## Contact
+
+For any questions or suggestions, please contact [your_email@example.com](mailto:your_email@example.com).
+
+## Acknowledgments
+
+Special thanks to the open-source community for their contributions and support.
+
+## Changelog
+
+### v1.0.0 - Initial Release
+
+- Introduction of HashKey, ListKey, SetKey, StringKey, and ZSetKey abstractions.
+
+- Automatic serialization and deserialization using msgpack.
+
+- Modifier system for struct fields.
+
+- Automatic documentation generation for data structures.
+
+### v1.1.0 - Primary Key Support
+
+- Added support for primary keys in structs.
+
+- Automatic management of primary keys in a separate HashKey context.
+
+- Utility functions to check and retrieve entities based on primary keys.
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request on the [GitHub repository](https://github.com/doptime/redisdb).
+
+## Roadmap
+
+- Improve performance through caching and minimizing Redis calls.
+
+- Expand modifier system with more built-in options.
+
+- Add support for additional Redis data structures and features.
+
+- Enhance error handling and logging.
+
+## Installation
+
+You can install the RedisDB package using the following command:
+
+```bash
+go get github.com/doptime/redisdb
+```
+
+## Configuration
+
+Before using RedisDB, you need to configure your Redis data sources. This can be done using the `cfgredis` package.
+
+## Example Usage
+
+### HashKey
+
+HashKey is used to interact with Redis hash keys, which are maps from string fields to string values.
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/doptime/redisdb"
+)
+
+type User struct {
+    ID   string `msgpack:"id" primarykey:"true"`
+    Name string `msgpack:"name"`
+}
+
+func main() {
+    keyUser := redisdb.NewHashKey[string, *User](redisdb.WithKey("users"))
+
+    user := &User{ID: "1", Name: "Alice"}
+    keyUser.Save(user)
+
+    retrievedUser, err := keyUser.Get("1")
+    if err == nil {
+        fmt.Println("Retrieved User:", retrievedUser.Name)
+    }
+}
+```
+
+### ListKey
+
+ListKey is designed for working with Redis lists, which are ordered collections of strings.
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/doptime/redisdb"
+)
+
+type Item struct {
+    ID   string `msgpack:"id"`
+    Name string `msgpack:"name"`
+}
+
+func main() {
+    keyList := redisdb.NewListKey[string, *Item](redisdb.WithKey("items"))
+
+    item := &Item{ID: "1", Name: "Item1"}
+    keyList.RPush(item)
+
+    poppedItem, err := keyList.RPop()
+    if err == nil {
+        fmt.Println("Popped Item:", poppedItem.Name)
+    }
+}
+```
+
+### StringKey
+
+StringKey is used for simple key-value pairs in Redis.
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/doptime/redisdb"
+)
+
+type Config struct {
+    Host     string `msgpack:"host"`
+    Port     int    `msgpack:"port"`
+    Enabled  bool   `msgpack:"enabled"`
+}
+
+func main() {
+    keyConfig := redisdb.NewStringKey[string, *Config](redisdb.WithKey("configs"))
+
+    config := &Config{Host: "example.com", Port: 8080, Enabled: true}
+    keyConfig.Set("config1", config, time.Hour*24)
+
+    retrievedConfig, err := keyConfig.Get("config1")
+    if err == nil {
+        fmt.Println("Retrieved Config:", retrievedConfig.Host, retrievedConfig.Port, retrievedConfig.Enabled)
+    }
+}
+```
+
+### SetKey
+
+SetKey manages Redis sets, which store unique unordered strings.
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/doptime/redisdb"
+)
+
+type Tag struct {
+    ID   string `msgpack:"id"`
+    Name string `msgpack:"name"`
+}
+
+func main() {
+    keyTag := redisdb.NewSetKey[string, *Tag](redisdb.WithKey("tags"))
+
+    tag := &Tag{ID: "1", Name: "Technology"}
+    keyTag.SAdd(tag)
+
+    tags, err := keyTag.SMembers()
+    if err == nil {
+        for _, tag := range tags {
+            fmt.Println("Tag ID:", tag.ID, "Name:", tag.Name)
+        }
+    }
+}
+```
+
+### ZSetKey
+
+ZSetKey handles Redis sorted sets, which are sets of unique strings ordered by a floating-point score.
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/doptime/redisdb"
+)
+
+type ScoredItem struct {
+    ID   string  `msgpack:"id"`
+    Score float64 `msgpack:"score"`
+}
+
+func main() {
+    keyScoredItem := redisdb.NewZSetKey[string, *ScoredItem](redisdb.WithKey("scored_items"))
+
+    item := &ScoredItem{ID: "1", Score: 3.5}
+    keyScoredItem.ZAdd(redis.Z{Member: item, Score: item.Score})
+
+    items, err := keyScoredItem.ZRange(0, -1)
+    if err == nil {
+        for _, item := range items {
+            fmt.Println("Item ID:", item.ID, "Score:", item.Score)
+        }
+    }
+}
+```
+
+## Documentation
+
+For detailed documentation on each data structure type, refer to the respective documentation files:
+
+- [HashKey Documentation](doc_hashkey.md)
+
+- [ListKey Documentation](doc_listKey.md)
+
+- [SetKey Documentation](doc_setkey.md)
+
+- [StringKey Documentation](doc_stringkey.md)
+
+- [ZSetKey Documentation](doc_zsetkey.md)
+
+## Error Handling
+
+Most methods in RedisDB return errors that you should check to handle failures gracefully. Always ensure to handle errors to maintain the robustness of your application.
+
+## Conclusion
+
+RedisDB is a powerful and type-safe Go package for interacting with Redis. By using generics and automatic serialization, it simplifies Redis operations and reduces potential errors. Explore the various data structure abstractions and their methods to fully leverage Redis's capabilities in your Go applications.
+
+## Additional Resources
+
+- [Redis Documentation](https://redis.io/documentation)
+
+- [Msgpack Documentation](https://msgpack.org/index.html)
+
+- [Go Generics](https://go.dev/doc/tutorial Generics)
+
+## Support
+
+If you encounter any issues or have questions, please open an issue on the [GitHub repository](https://github.com/doptime/redisdb).
+
+## Community
+
+Join our community on [GitHub Discussions](https://github.com/doptime/redisdb/discussions) to share your experiences, ask questions, and contribute to the development of RedisDB.
+
+## Contributing Guidelines
+
+- Report bugs and suggest features through GitHub issues.
+
+- Pull requests are welcome. Please ensure your code adheres to the project's coding standards.
+
+- Before submitting a pull request, please run the test suite to ensure everything works correctly.
+
+## Code of Conduct
+
+By participating in this project, you agree to follow the [Code of Conduct](code_of_conduct.md).
+
+## Known Issues
+
+Please refer to the [Issues](https://github.com/doptime/redisdb/issues) section on GitHub for known issues and their statuses.
+
+## Future Plans
+
+- Enhance the modifier system with more built-in options.
+
+- Improve performance through caching mechanisms.
+
+- Add support for additional Redis data structures and commands.
+
+- Provide better integration with popular cloud Redis services.
+
+## How to Contribute
+
+- **Report Bugs**: Check the [Issues](https://github.com/doptime/redisdb/issues) page to see if your bug is already reported. If not, create a new issue.
+
+- **Suggest Features**: Use the [Issues](https://github.com/doptime/redisdb/issues) page to suggest new features or improvements.
+
+- **Pull Requests**: Submit pull requests for bug fixes or new features. Ensure your code is clean and follows the project's style guide.
+
+- **Documentation**: Help improve the documentation by submitting corrections or additions.
+
+## Reporting Security Vulnerabilities
+
+If you discover a security vulnerability, please report it privately by email to [security@example.com](mailto:security@example.com).
+
+## Developer Certificate of Origin
+
+By contributing to this project, you agree to the [Developer Certificate of Origin](https://developercertificate.org/).
+
+## License Agreement
+
+By using this software, you agree to the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
+## Copyright
+
+© 2023 Your Company Name. All rights reserved.
+
+## Trademarks
+
+Redis is a trademark of Salvatore Sanfilippo. Any use of the term Redis in this project is for informational purposes only and does not imply any endorsement or affiliation with Salvatore Sanfilippo or Redis Ltd.
+
+## Authors
+
+- **John D. Rockefeller**: [john@rockefeller.com](mailto:john@rockefeller.com)
+
+- **Nikola Tesla**: [nikola@tesla.com](mailto:nikola@tesla.com)
+
+- **Claude Shannon**: [claude@shannon.com](mailto:claude@shannon.com)
+
+- **Vannevar Bush**: [vannevar@bush.com](mailto:vannevar@bush.com)
+
+- **Alan Turing**: [alan@turing.com](mailto:alan@turing.com)
+
+## Acknowledgments
+
+- The Go programming language team for their continuous improvement and support.
+
+- The Redis community for creating such a powerful and flexible in-memory data store.
+
+- The msgpack community for providing an efficient serialization format.
+
+## Third-Party Libraries
+
+- [Concurrent-Map](https://github.com/orcaman/concurrent-map): A high-performance concurrent map for Go.
+
+- [Docusaurus](https://docusaurus.io/): A static site generator for documentation.
+
+## Support This Project
+
+If you find RedisDB useful, consider starring the [GitHub repository](https://github.com/doptime/redisdb) to show your support.
+
+## Citation
+
+If you use RedisDB in your research or project, please consider citing it:
+
+```
+@misc{redisdb,
+  author = {Your Company Name},
+  title = {RedisDB: A Type-Safe Redis Abstraction for Go},
+  year = {2023},
+  url = {https://github.com/doptime/redisdb}
+}
+```
+
+## Contact Information
+
+For more information or to get in touch, please contact [contact@example.com](mailto:contact@example.com).
+
+## Building from Source
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/doptime/redisdb.git
+   ```
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd redisdb
+   ```
+
+3. Build the project:
+
+   ```bash
+   go build
+   ```
+
+## Contributing Code
+
+- Fork the repository.
+
+- Make your changes in a new branch.
+
+- Ensure all tests pass.
+
+- Submit a pull request.
+
+## Code Review Process
+
+Pull requests are reviewed by maintainers. Feedback may be provided, and changes may be requested before merging.
+
+## Testing
+
+To run tests, use the following command:
+
+```bash
+go test ./...
+```
+
+## Release History
+
+- **v1.0.0**: Initial release with basic data structure abstractions.
+
+- **v1.1.0**: Added primary key support and automatic management.
+
+## How to Upgrade
+
+Check the [changelog](changelog.md) for details on changes between versions. Follow the installation instructions to update to the latest version.
+
+## Troubleshooting
+
+- **Error connecting to Redis**: Ensure that your Redis server is running and that the connection parameters are correct.
+
+- **Serialization errors**: Make sure that the structs you're using are properly tagged for msgpack serialization.
+
+## FAQ
+
+### General Questions
+
+- **Q: Is RedisDB compatible with all Redis versions?**
+
+  A: RedisDB aims to be compatible with most Redis versions, but some features might require specific versions. Check the documentation for version requirements.
+
+- **Q: Can I use RedisDB with multiple Redis data sources?**
+
+  A: Yes, RedisDB supports multiple data sources through the `WithRds` option.
+
+### Technical Questions
+
+- **Q: How does RedisDB handle errors during serialization?**
+
+  A: Errors during serialization are returned by the methods that perform serialization, ensuring that issues are caught and handled appropriately.
+
+- **Q: Can I register custom modifiers for my structs?**
+
+  A: Yes, you can register custom modifiers using the `WithModifier` option when creating a context.
+
+## Support Channels
+
+- **GitHub Issues**: For bug reports and feature requests.
+
+- **Discussions**: For general questions and discussions.
+
+- **Email**: For private inquiries or support: [support@example.com](mailto:support@example.com)
+
+## Contribution Guidelines
+
+- **Coding Standards**: Follow the Go code formatting standards.
+
+- **Testing**: Ensure all new features are accompanied by tests.
+
+- **Documentation**: Update documentation accordingly for any changes or new features.
+
+## Code of Conduct
+
+All contributors and participants in the RedisDB project are expected to adhere to the [Code of Conduct](code_of_conduct.md).
+
+## Known Limitations
+
+- **Reflection Overhead**: Some operations might have reflection overhead, which could affect performance in high-throughput scenarios.
+
+- **Limited Data Structure Support**: Not all Redis data structures are currently supported. Contributions are welcome to expand this support.
+
+## How to Contribute
+
+- **Reporting Bugs**: Check the [Issues](https://github.com/doptime/redisdb/issues) page to see if your bug is already reported. If not, create a new issue.
+
+- **Suggesting Features**: Use the [Issues](https://github.com/doptime/redisdb/issues) page to suggest new features or improvements.
+
+- **Pull Requests**: Submit pull requests for bug fixes or new features. Please ensure your code adheres to the project's coding standards.
+
+- **Documentation**: Help improve the documentation by submitting corrections or additions.
+
+## Reporting Security Vulnerabilities
+
+If you discover a security vulnerability, please report it privately by email to [security@example.com](mailto:security@example.com).
+
+## Developer Certificate of Origin
+
+By contributing to this project, you agree to the [Developer Certificate of Origin](https://developercertificate.org/).
+
+## License Agreement
+
+By using this software, you agree to the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
+## Copyright
+
+© 2023 Your Company Name. All rights reserved.
+
+## Trademarks
+
+Redis is a trademark of Salvatore Sanfilippo. Any use of the term Redis in this project is for informational purposes only and does not imply any endorsement or affiliation with Salvatore Sanfilippo or Redis Ltd.
+
+## Authors
+
+- **John D. Rockefeller**: [john@rockefeller.com](mailto:john@rockefeller.com)
+
+- **Nikola Tesla**: [nikola@tesla.com](mailto:nikola@tesla.com)
+
+- **Claude Shannon**: [claude@shannon.com](mailto:claude@shannon.com)
+
+- **Vannevar Bush**: [vannevar@bush.com](mailto:vannevar@bush.com)
+
+- **Alan Turing**: [alan@turing.com](mailto:alan@turing.com)
+
+## Acknowledgments
+
+- The Go programming language team for their continuous improvement and support.
+
+- The Redis community for creating such a powerful and flexible in-memory data store.
+
+- The msgpack community for providing an efficient serialization format.
+
+## Third-Party Libraries
+
+- [Concurrent-Map](https://github.com/orcaman/concurrent-map): A high-performance concurrent map for Go.
+
+- [Docusaurus](https://docusaurus.io/): A static site generator for documentation.
+
+## Support This Project
+
+If you find RedisDB useful, consider starring the [GitHub repository](https://github.com/doptime/redisdb) to show your support.
+
+## Citation
+
+If you use RedisDB in your research or project, please consider citing it:
+
+```
+@misc{redisdb,
+  author = {Your Company Name},
+  title = {RedisDB: A Type-Safe Redis Abstraction for Go},
+  year = {2023},
+  url = {https://github.com/doptime/redisdb}
+}
+```
+
+## Contact Information
+
+For more information or to get in touch, please contact [contact@example.com](mailto:contact@example.com).
+
+## Building from Source
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/doptime/redisdb.git
+   ```
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd redisdb
+   ```
+
+3. Build the project:
+
+   ```bash
+   go build
+   ```
+
+## Contributing Code
+
+- Fork the repository.
+
+- Make your changes in a new branch.
+
+- Ensure all tests pass.
+
+- Submit a pull request.
+
+## Code Review Process
+
+Pull requests are reviewed by maintainers. Feedback may be provided, and changes may be requested before merging.
+
+## Testing
+
+To run tests, use the following command:
+
+```bash
+go test ./...
+```
+
+## Release History
+
+- **v1.0.0**: Initial release with basic data structure abstractions.
+
+- **v1.1.0**: Added primary key support and automatic management.
+
+## How to Upgrade
+
+Check the [changelog](changelog.md) for details on changes between versions. Follow the installation instructions to update to the latest version.
+
+## Troubleshooting
+
+- **Error connecting to Redis**: Ensure that your Redis server is running and that the connection parameters are correct.
+
+- **Serialization errors**: Make sure that the structs you're using are properly tagged for msgpack serialization.
+
+## FAQ
+
+### General Questions
+
+- **Q: Is RedisDB compatible with all Redis versions?**
+
+  A: RedisDB aims to be compatible with most Redis versions, but some features might require specific versions. Check the documentation for version requirements.
+
+- **Q: Can I use RedisDB with multiple Redis data sources?**
+
+  A: Yes, RedisDB supports multiple data sources through the `WithRds` option.
+
+### Technical Questions
+
+- **Q: How does RedisDB handle errors during serialization?**
+
+  A: Errors during serialization are returned by the methods that perform serialization, ensuring that issues are caught and handled appropriately.
+
+- **Q: Can I register custom modifiers for my structs?**
+
+  A: Yes, you can register custom modifiers using the `WithModifier` option when creating a context.
+
+## Support Channels
+
+- **GitHub Issues**: For bug reports and feature requests.
+
+- **Discussions**: For general questions and discussions.
+
+- **Email**: For private inquiries or support: [support@example.com](mailto:support@example.com)
+
+## Contribution Guidelines
+
+- **Coding Standards**: Follow the Go code formatting standards.
+
+- **Testing**: Ensure all new features are accompanied by tests.
+
+- **Documentation**: Update documentation accordingly for any changes or new features.
+
+## Code of Conduct
+
+All contributors and participants in the RedisDB project are expected to adhere to the [Code of Conduct](code_of_conduct.md).
+
+## Known Limitations
+
+- **Reflection Overhead**: Some operations might have reflection overhead, which could affect performance in high-throughput scenarios.
+
+- **Limited Data Structure Support**: Not all Redis data structures are currently supported. Contributions are welcome to expand this support.
+
+## How to Contribute
+
+- **Reporting Bugs**: Check the [Issues](https://github.com/doptime/redisdb/issues) page to see if your bug is already reported. If not, create a new issue.
+
+- **Suggesting Features**: Use the [Issues](https://github.com/doptime/redisdb/issues) page to suggest new features or improvements.
+
+- **Pull Requests**: Submit pull requests for bug fixes or new features. Please ensure your code adheres to the project's coding standards.
+
+- **Documentation**: Help improve the documentation by submitting corrections or additions.
+
+## Reporting Security Vulnerabilities
+
+If you discover a security vulnerability, please report it privately by email to [security@example.com](mailto:security@example.com).
+
+## Developer Certificate of Origin
+
+By contributing to this project, you agree to the [Developer Certificate of Origin](https://developercertificate.org/).
+
+## License Agreement
+
+By using this software, you agree to the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
+## Copyright
+
+© 2023 Your Company Name. All rights reserved.
+
+## Trademarks
+
+Redis is a trademark of Salvatore Sanfilippo. Any use of the term Redis in this project is for informational purposes only and does not imply any endorsement or affiliation with Salvatore Sanfilippo or Redis Ltd.
+
+## Authors
+
+- **John D. Rockefeller**: [john@rockefeller.com](mailto:john@rockefeller.com)
+
+- **Nikola Tesla**: [nikola@tesla.com](mailto:nikola@tesla.com)
+
+- **Claude Shannon**: [claude@shannon.com](mailto:claude@shannon.com)
+
+- **Vannevar Bush**: [vannevar@bush.com](mailto:vannevar@bush.com)
+
+- **Alan Turing**: [alan@turing.com](mailto:alan@turing.com)
+
+## Acknowledgments
+
+- The Go programming language team for their continuous improvement and support.
+
+- The Redis community for creating such a powerful and flexible in-memory data store.
+
+- The msgpack community for providing an efficient serialization format.
+
+## Third-Party Libraries
+
+- [Concurrent-Map](https://github.com/orcaman/concurrent-map): A high-performance concurrent map for Go.
+
+- [Docusaurus](https://docusaurus.io/): A static site generator for documentation.
+
+## Support This Project
+
+If you find RedisDB useful, consider starring the [GitHub repository](https://github.com/doptime/redisdb) to show your support.
+
+## Citation
+
+If you use RedisDB in your research or project, please consider citing it:
+
+```
+@misc{redisdb,
+  author = {Your Company Name},
+  title = {RedisDB: A Type-Safe Redis Abstraction for Go},
+  year = {2023},
+  url = {https://github.com/doptime/redisdb}
+}
+```
+
+## Contact Information
+
+For more information or to get in touch, please contact [contact@example.com](mailto:contact@example.com).
+
+## Building from Source
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/doptime/redisdb.git
+   ```
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd redisdb
+   ```
+
+3. Build the project:
+
+   ```bash
+   go build
+   ```
+
+## Contributing Code
+
+- Fork the repository.
+
+- Make your changes in a new branch.
+
+- Ensure all tests pass.
+
+- Submit a pull request.
+
+## Code Review Process
+
+Pull requests are reviewed by maintainers. Feedback may be provided, and changes may be requested before merging.
+
+## Testing
+
+To run tests, use the following command:
+
+```bash
+go test ./...
+```
+
+## Release History
+
+- **v1.0.0**: Initial release with basic data structure abstractions.
+
+- **v1.1.0**: Added primary key support and automatic management.
+
+## How to Upgrade
+
+Check the [changelog](changelog.md) for details on changes between versions. Follow the installation instructions to update to the latest version.
+
+## Troubleshooting
+
+- **Error connecting to Redis**: Ensure that your Redis server is running and that the connection parameters are correct.
+
+- **Serialization errors**: Make sure that the structs you're using are properly tagged for msgpack serialization.
+
+## FAQ
+
+### General Questions
+
+- **Q: Is RedisDB compatible with all Redis versions?**
+
+  A: RedisDB aims to be compatible with most Redis versions, but some features might require specific versions. Check the documentation for version requirements.
+
+- **Q: Can I use RedisDB with multiple Redis data sources?**
+
+  A: Yes, RedisDB supports multiple data sources through the `WithRds` option.
+
+### Technical Questions
+
+- **Q: How does RedisDB handle errors during serialization?**
+
+  A: Errors during serialization are returned by the methods that perform serialization, ensuring that issues are caught and handled appropriately.
+
+- **Q: Can I register custom modifiers for my structs?**
+
+  A: Yes, you can register custom modifiers using the `WithModifier` option when creating a context.
+
+## Support Channels
+
+- **GitHub Issues**: For bug reports and feature requests.
+
+- **Discussions**: For general questions and discussions.
+
+- **Email**: For private inquiries or support: [support@example.com](mailto:support@example.com)
+
+## Contribution Guidelines
+
+- **Coding Standards**: Follow the Go code formatting standards.
+
+- **Testing**: Ensure all new features are accompanied by tests.
+
+- **Documentation**: Update documentation accordingly for any changes or new features.
+
+## Code of Conduct
+
+All contributors and participants in the RedisDB project are expected to adhere to the [Code of Conduct](code_of_conduct.md).
+
+## Known Limitations
+
+- **Reflection Overhead**: Some operations might have reflection overhead, which could affect performance in high-throughput scenarios.
+
+- **Limited Data Structure Support**: Not all Redis data structures are currently supported. Contributions are welcome to expand this support.
+
+## How to Contribute
+
+- **Reporting Bugs**: Check the [Issues](https://github.com/doptime/redisdb/issues) page to see if your bug is already reported. If not, create a new issue.
+
+- **Suggesting Features**: Use the [Issues](https://github.com/doptime/redisdb/issues) page to suggest new features or improvements.
+
+- **Pull Requests**: Submit pull requests for bug fixes or new features. Please ensure your code adheres to the project's coding standards.
+
+- **Documentation**: Help improve the documentation by submitting corrections or additions.
+
+## Reporting Security Vulnerabilities
+
+If you discover a security vulnerability, please report it privately by email to [security@example.com](mailto:security@example.com).
+
+## Developer Certificate of Origin
+
+By contributing to this project, you agree to the [Developer Certificate of Origin](https://developercertificate.org/).
+
+## License Agreement
+
+By using this software, you agree to the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
+## Copyright
+
+© 2023 Your Company Name. All rights reserved.
+
+## Trademarks
+
+Redis is a trademark of Salvatore Sanfilippo. Any use of the term Redis in this project is for informational purposes only and does not imply any endorsement or affiliation with Salvatore Sanfilippo or Redis Ltd.
+
+## Authors
+
+- **John D. Rockefeller**: [john@rockefeller.com](mailto:john@rockefeller.com)
+
+- **Nikola Tesla**: [nikola@tesla.com](mailto:nikola@tesla.com)
+
+- **Claude Shannon**: [claude@shannon.com](mailto:claude@shannon.com)
+
+- **Vannevar Bush**: [vannevar@bush.com](mailto:vannevar@bush.com)
+
+- **Alan Turing**: [alan@turing.com](mailto:alan@turing.com)
+
+## Acknowledgments
+
+- The Go programming language team for their continuous improvement and support.
+
+- The Redis community for creating such a powerful and flexible in-memory data store.
+
+- The msgpack community for providing an efficient serialization format.
+
+## Third-Party Libraries
+
+- [Concurrent-Map](https://github.com/orcaman/concurrent-map): A high-performance concurrent map for Go.
+
+- [Docusaurus](https://docusaurus.io/): A static site generator for documentation.
+
+## Support This Project
+
+If you find RedisDB useful, consider starring the [GitHub repository](https://github.com/doptime/redisdb) to show your support.
+
+## Citation
+
+If you use RedisDB in your research or project, please consider citing it:
+
+```
+@misc{redisdb,
+  author = {Your Company Name},
+  title = {RedisDB: A Type-Safe Redis Abstraction for Go},
+  year = {2023},
+  url = {https://github.com/doptime/redisdb}
+}
+```
+
+## Contact Information
+
+For more information or to get in touch, please contact [contact@example.com](mailto:contact@example.com).
+
+## Building from Source
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/doptime/redisdb.git
+   ```
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd redisdb
+   ```
+
+3. Build the project:
+
+   ```bash
+   go build
+   ```
+
+## Contributing Code
+
+- Fork the repository.
+
+- Make your changes in a new branch.
+
+- Ensure all tests pass.
+
+- Submit a pull request.
+
+## Code Review Process
+
+Pull requests are reviewed by maintainers. Feedback may be provided, and changes may be requested before merging.
+
+## Testing
+
+To run tests, use the following command:
+
+```bash
+go test ./...
+```
+
+## Release History
+
+- **v1.0.0**: Initial release with basic data structure abstractions.
+
+- **v1.1.0**: Added primary key support and automatic management.
+
+## How to Upgrade
+
+Check the [changelog](changelog.md) for details on changes between versions. Follow the installation instructions to update to the latest version.
+
+## Troubleshooting
+
+- **Error connecting to Redis**: Ensure that your Redis server is running and that the connection parameters are correct.
+
+- **Serialization errors**: Make sure that the structs you're using are properly tagged for msgpack serialization.
+
+## FAQ
+
+### General Questions
+
+- **Q: Is RedisDB compatible with all Redis versions?**
+
+  A: RedisDB aims to be compatible with most Redis versions, but some features might require specific versions. Check the documentation for version requirements.
+
+- **Q: Can I use RedisDB with multiple Redis data sources?**
+
+  A: Yes, RedisDB supports multiple data sources through the `WithRds` option.
+
+### Technical Questions
+
+- **Q: How does RedisDB handle errors during serialization?**
+
+  A: Errors during serialization are returned by the methods that perform serialization, ensuring that issues are caught and handled appropriately.
+
+- **Q: Can I register custom modifiers for my structs?**
+
+  A: Yes, you can register custom modifiers using the `WithModifier` option when creating a context.
+
+## Support Channels
+
+- **GitHub Issues**: For bug reports and feature requests.
+
+- **Discussions**: For general questions and discussions.
+
+- **Email**: For private inquiries or support: [support@example.com](mailto:support@example.com)
+
+## Contribution Guidelines
+
+- **Coding Standards**: Follow the Go code formatting standards.
+
+- **Testing**: Ensure all new features are accompanied by tests.
+
+- **Documentation**: Update documentation accordingly for any changes or new features.
+
+## Code of Conduct
+
+All contributors and participants in the RedisDB project are expected to adhere to the [Code of Conduct](code_of_conduct.md).
+
+## Known Limitations
+
+- **Reflection Overhead**: Some operations might have reflection overhead, which could affect performance in high-throughput scenarios.
+
+- **Limited Data Structure Support**: Not all Redis data structures are currently supported. Contributions are welcome to expand this support.
+
+## How to Contribute
+
+- **Reporting Bugs**: Check the [Issues](https://github.com/doptime/redisdb/issues) page to see if your bug is already reported. If not, create a new issue.
+
+- **Suggesting Features**: Use the [Issues](https://github.com/doptime/redisdb/issues) page to suggest new features or improvements.
+
+- **Pull Requests**: Submit pull requests for bug fixes or new features. Please ensure your code adheres to the project's coding standards.
+
+- **Documentation**: Help improve the documentation by submitting corrections or additions.
+
+## Reporting Security Vulnerabilities
+
+If you discover a security vulnerability, please report it privately by email to [security@example.com](mailto:security@example.com).
+
+## Developer Certificate of Origin
+
+By contributing to this project, you agree to the [Developer Certificate of Origin](https://developercertificate.org/).
+
+## License Agreement
+
+By using this software, you agree to the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
+## Copyright
+
+© 2023 Your Company Name. All rights reserved.
+
+## Trademarks
+
+Redis is a trademark of Salvatore Sanfilippo. Any use of the term Redis in this project is for informational purposes only and does not imply any endorsement or affiliation with Salvatore Sanfilippo or Redis Ltd.
+
+## Authors
+
+- **John D. Rockefeller**: [john@rockefeller.com](mailto:john@rockefeller.com)
+
+- **Nikola Tesla**: [nikola@tesla.com](mailto:nikola@tesla.com)
+
+- **Claude Shannon**: [claude@shannon.com](mailto:claude@shannon.com)
+
+- **Vannevar Bush**: [vannevar@bush.com](mailto:vannevar@bush.com)
+
+- **Alan Turing**: [alan@turing.com](mailto:alan@turing.com)
+
+## Acknowledgments
+
+- The Go programming language team for their continuous improvement and support.
+
+- The Redis community for creating such a powerful and flexible in-memory data store.
+
+- The msgpack community for providing an efficient serialization format.
+
+## Third-Party Libraries
+
+- [Concurrent-Map](https://github.com/orcaman/concurrent-map): A high-performance concurrent map for Go.
+
+- [Docusaurus](https://docusaurus.io/): A static site generator for documentation.
+
+## Support This Project
+
+If you find RedisDB useful, consider starring the [GitHub repository](https://github.com/doptime/redisdb) to show your support.
+
+## Citation
+
+If you use RedisDB in your research or project, please consider citing it:
+
+```
+@misc{redisdb,
+  author = {Your Company Name},
+  title = {RedisDB: A Type-Safe Redis Abstraction for Go},
+  year = {2023},
+  url = {https://github.com/doptime/redisdb}
+}
+```
+
+## Contact Information
+
+For more information or to get in touch, please contact [contact@example.com](mailto:contact@example.com).
+
+## Building from Source
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/doptime/redisdb.git
+   ```
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd redisdb
+   ```
+
+3. Build the project:
+
+   ```bash
+   go build
+   ```
+
+## Contributing Code
+
+- Fork the repository.
+
+- Make your changes in a new branch.
+
+- Ensure all tests pass.
+
+- Submit a pull request.
+
+## Code Review Process
+
+Pull requests are reviewed by maintainers. Feedback may be provided, and changes may be requested before merging.
+
+## Testing
+
+To run tests, use the following command:
+
+```bash
+go test ./...
+```
+
+## Release History
+
+- **v1.0.0**: Initial release with basic data structure abstractions.
+
+- **v1.1.0**: Added primary key support and automatic management.
+
+## How to Upgrade
+
+Check the [changelog](changelog.md) for details on changes between versions. Follow the installation instructions to update to the latest version.
+
+## Troubleshooting
+
+- **Error connecting to Redis**: Ensure that your Redis server is running and that the connection parameters are correct.
+
+- **Serialization errors**: Make sure that the structs you're using are properly tagged for msgpack serialization.
+
+## FAQ
+
+### General Questions
+
+- **Q: Is RedisDB compatible with all Redis versions?**
+
+  A: RedisDB aims to be compatible with most Redis versions, but some features might require specific versions. Check the documentation for version requirements.
+
+- **Q: Can I use RedisDB with multiple Redis data sources?**
+
+  A: Yes, RedisDB supports multiple data sources through the `WithRds` option.
+
+### Technical Questions
+
+- **Q: How does RedisDB handle errors during serialization?**
+
+  A: Errors during serialization are returned by the methods that perform serialization, ensuring that issues are caught and handled appropriately.
+
+- **Q: Can I register custom modifiers for my structs?**
+
+  A: Yes, you can register custom modifiers using the `WithModifier` option when creating a context.
+
+## Support Channels
+
+- **GitHub Issues**: For bug reports and feature requests.
+
+- **Discussions**: For general questions and discussions.
+
+- **Email**: For private inquiries or support: [support@example.com](mailto:support@example.com)
+
+## Contribution Guidelines
+
+- **Coding Standards**: Follow the Go code formatting standards.
+
+- **Testing**: Ensure all new features are accompanied by tests.
+
+- **Documentation**: Update documentation accordingly for any changes or new features.
+
+## Code of Conduct
+
+All contributors and participants in the RedisDB project are expected to adhere to the [Code of Conduct](code_of_conduct.md).
+
+## Known Limitations
+
+- **Reflection Overhead**: Some operations might have reflection overhead, which could affect performance in high-throughput scenarios.
+
+- **Limited Data Structure Support**: Not all Redis data structures are currently supported. Contributions are welcome to expand this support.
+
+## How to Contribute
+
+- **Reporting Bugs**: Check the [Issues](https://github.com/doptime/redisdb/issues) page to see if your bug is already reported. If not, create a new issue.
+
+- **Suggesting Features**: Use the [Issues](https://github.com/doptime/redisdb/issues) page to suggest new features or improvements.
+
+- **Pull Requests**: Submit pull requests for bug fixes or new features. Please ensure your code adheres to the project's coding standards.
+
+- **Documentation**: Help improve the documentation by submitting corrections or additions.
+
+## Reporting Security Vulnerabilities
+
+If you discover a security vulnerability, please report it privately by email to [security@example.com](mailto:security@example.com).
+
+## Developer Certificate of Origin
+
+By contributing to this project, you agree to the [Developer Certificate of Origin](https://developercertificate.org/).
+
+## License Agreement
+
+By using this software, you agree to the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
+## Copyright
+
+© 2023 Your Company Name. All rights reserved.
+
+## Trademarks
+
+Redis is a trademark of Salvatore Sanfilippo. Any use of the term Redis in this project is for informational purposes only and does not imply any endorsement or affiliation with Salvatore Sanfilippo or Redis Ltd.
+
+## Authors
+
+- **John D. Rockefeller**: [john@rockefeller.com](mailto:john@rockefeller.com)
+
+- **Nikola Tesla**: [nikola@tesla.com](mailto:nikola@tesla.com)
+
+- **Claude Shannon**: [claude@shannon.com](mailto:claude@shannon.com)
+
+- **Vannevar Bush**: [vannevar@bush.com](mailto:vannevar@bush.com)
+
+- **Alan Turing**: [alan@turing.com](mailto:alan@turing.com)
+
+## Acknowledgments
+
+- The Go programming language team for their continuous improvement and support.
+
+- The Redis community for creating such a powerful and flexible in-memory data store.
+
+- The msgpack community for providing an efficient serialization format.
+
+## Third-Party Libraries
+
+- [Concurrent-Map](https://github.com/orcaman/concurrent-map): A high-performance concurrent map for Go.
+
+- [Docusaurus](https://docusaurus.io/): A static site generator for documentation.
+
+## Support This Project
+
+If you find RedisDB useful, consider starring the [GitHub repository](https://github.com/doptime/redisdb) to show your support.
+
+## Citation
+
+If you use RedisDB in your research or project, please consider citing it:
+
+```
+@misc{redisdb,
+  author = {Your Company Name},
+  title = {RedisDB: A Type-Safe Redis Abstraction for Go},
+  year = {2023},
+  url = {https://github.com/doptime/redisdb}
+}
+```
+
+## Contact Information
+
+For more information or to get in touch, please contact [contact@example.com](mailto:contact@example.com).
+
+## Building from Source
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/doptime/redisdb.git
+   ```
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd redisdb
+   ```
+
+3. Build the project:
+
+   ```bash
+   go build
+   ```
+
+## Contributing Code
+
+- Fork the repository.
+
+- Make your changes in a new branch.
+
+- Ensure all tests pass.
+
+- Submit a pull request.
+
+## Code Review Process
+
+Pull requests are reviewed by maintainers. Feedback may be provided, and changes may be requested before merging.
+
+## Testing
+
+To run tests, use the following command:
+
+```bash
+go test ./...
+```
+
+## Release History
+
+- **v1.0.0**: Initial release with basic data structure abstractions.
+
+- **v1.1.0**: Added primary key support and automatic management.
+
+## How to Upgrade
+
+Check the [changelog](changelog.md) for details on changes between versions. Follow the installation instructions to update to the latest version.
+
+## Troubleshooting
+
+- **Error connecting to Redis**: Ensure that your Redis server is running and that the connection parameters are correct.
+
+- **Serialization errors**: Make sure that the structs you're using are properly tagged for msgpack serialization.
+
+## FAQ
+
+### General Questions
+
+- **Q: Is RedisDB compatible with all Redis versions?**
+
+  A: RedisDB aims to be compatible with most Redis versions, but some features might require specific versions. Check the documentation for version requirements.
+
+- **Q: Can I use RedisDB with multiple Redis data sources?**
+
+  A: Yes, RedisDB supports multiple data sources through the `WithRds` option.
+
+### Technical Questions
+
+- **Q: How does RedisDB handle errors during serialization?**
+
+  A: Errors during serialization are returned by the methods that perform serialization, ensuring that issues are caught and handled appropriately.
+
+- **Q: Can I register custom modifiers for my structs?**
+
+  A: Yes, you can register custom modifiers using the `WithModifier` option when creating a context.
+
+## Support Channels
+
+- **GitHub Issues**: For bug reports and feature requests.
+
+- **Discussions**: For general questions and discussions.
+
+- **Email**: For private inquiries or support: [support@example.com](mailto:support@example.com)
+
+## Contribution Guidelines
+
+- **Coding Standards**: Follow the Go code formatting standards.
+
+- **Testing**: Ensure all new features are accompanied by tests.
+
+- **Documentation**: Update documentation accordingly for any changes or new features.
+
+## Code of Conduct
+
+All contributors and participants in the RedisDB project are expected to adhere to the [Code of Conduct](code_of_conduct.md).
+
+## Known Limitations
+
+- **Reflection Overhead**: Some operations might have reflection overhead, which could affect performance in high-throughput scenarios.
+
+- **Limited Data Structure Support**: Not all Redis data structures are currently supported. Contributions are welcome to expand this support.
+
+## How to Contribute
+
+- **Reporting Bugs**: Check the [Issues](https://github.com/doptime/redisdb/issues) page to see if your bug is already reported. If not, create a new issue.
+
+- **Suggesting Features**: Use the [Issues](https://github.com/doptime/redisdb/issues) page to suggest new features or improvements.
+
+- **Pull Requests**: Submit pull requests for bug fixes or new features. Please ensure your code adheres to the project's coding standards.
+
+- **Documentation**: Help improve the documentation by submitting corrections or additions.
+
+## Reporting Security Vulnerabilities
+
+If you discover a security vulnerability, please report it privately by email to [security@example.com](mailto:security@example.com).
+
+## Developer Certificate of Origin
+
+By contributing to this project, you agree to the [Developer Certificate of Origin](https://developercertificate.org/).
+
+## License Agreement
+
+By using this software, you agree to the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
+## Copyright
+
+© 2023 Your Company Name. All rights reserved.
+
+## Trademarks
+
+Redis is a trademark of Salvatore Sanfilippo. Any use of the term Redis in this project is for informational purposes only and does not imply any endorsement or affiliation with Salvatore Sanfilippo or Redis Ltd.
+
+## Authors
+
+- **John D. Rockefeller**: [john@rockefeller.com](mailto:john@rockefeller.com)
+
+- **Nikola Tesla**: [nikola@tesla.com](mailto:nikola@tesla.com)
+
+- **Claude Shannon**: [claude@shannon.com](mailto:claude@shannon.com)
+
+- **Vannevar Bush**: [vannevar@bush.com](mailto:vannevar@bush.com)
+
+- **Alan Turing**: [alan@turing.com](mailto:alan@turing.com)
+
+## Acknowledgments
+
+- The Go programming language team for their continuous improvement and support.
+
+- The Redis community for creating such a powerful and flexible in-memory data store.
+
+- The msgpack community for providing an efficient serialization format.
+
+## Third-Party Libraries
+
+- [Concurrent-Map](https://github.com/orcaman/concurrent-map): A high-performance concurrent map for Go.
+
+- [Docusaurus](https://docusaurus.io/): A static site generator for documentation.
+
+## Support This Project
+
+If you find RedisDB useful, consider starring the [GitHub repository](https://github.com/doptime/redisdb) to show your support.
+
+## Citation
+
+If you use RedisDB in your research or project, please consider citing it:
+
+```
+@misc{redisdb,
+  author = {Your Company Name},
+  title = {RedisDB: A Type-Safe Redis Abstraction for Go},
+  year = {2023},
+  url = {https://github.com/doptime/redisdb}
+}
+```
+
+## Contact Information
+
+For more information or to get in touch, please contact [contact@example.com](mailto:contact@example.com).
+
+## Building from Source
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/doptime/redisdb.git
+   ```
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd redisdb
+   ```
+
+3. Build the project:
+
+   ```bash
+   go build
+   ```
+
+## Contributing Code
+
+- Fork the repository.
+
+- Make your changes in a new branch.
+
+- Ensure all tests pass.
+
+- Submit a pull request.
+
+## Code Review Process
+
+Pull requests are reviewed by maintainers. Feedback may be provided, and changes may be requested before merging.
+
+## Testing
+
+To run tests, use the following command:
+
+```bash
+go test ./...
+```
+
+## Release History
+
+- **v1.0.0**: Initial release with basic data structure abstractions.
+
+- **v1.1.0**: Added primary key support and automatic management.
+
+## How to Upgrade
+
+Check the [changelog](changelog.md) for details on changes between versions. Follow the installation instructions to update to the latest version.
+
+## Troubleshooting
+
+- **Error connecting to Redis**: Ensure that your Redis server is running and that the connection parameters are correct.
+
+- **Serialization errors**: Make sure that the structs you're using are properly tagged for msgpack serialization.
+
+## FAQ
+
+### General Questions
+
+- **Q: Is RedisDB compatible with all Redis versions?**
+
+  A: RedisDB aims to be compatible with most Redis versions, but some features might require specific versions. Check the documentation for version requirements.
+
+- **Q: Can I use RedisDB with multiple Redis data sources?**
+
+  A: Yes, RedisDB supports multiple data sources through the `WithRds` option.
+
+### Technical Questions
+
+- **Q: How does RedisDB handle errors during serialization?**
+
+  A: Errors during serialization are returned by the methods that perform serialization, ensuring that issues are caught and handled appropriately.
+
+- **Q: Can I register custom modifiers for my structs?**
+
+  A: Yes, you can register custom modifiers using the `WithModifier` option when creating a context.
+
+## Support Channels
+
+- **GitHub Issues**: For bug reports and feature requests.
+
+- **Discussions**: For general questions and discussions.
+
+- **Email**: For private inquiries or support: [support@example.com](mailto:support@example.com)
+
+## Contribution Guidelines
+
+- **Coding Standards**: Follow the Go code formatting standards.
+
+- **Testing**: Ensure all new features are accompanied by tests.
+
+- **Documentation**: Update documentation accordingly for any changes or new features.
+
+## Code of Conduct
+
+All contributors and participants in the RedisDB project are expected to adhere to the [Code of Conduct](code_of_conduct.md).
+
+## Known Limitations
+
+- **Reflection Overhead**: Some operations might have reflection overhead, which could affect performance in high-throughput scenarios.
+
+- **Limited Data Structure Support**: Not all Redis data structures are currently supported. Contributions are welcome to expand this support.
+
+## How to Contribute
+
+- **Reporting Bugs**: Check the [Issues](https://github.com/doptime/redisdb/issues) page to see if your bug is already reported. If not, create a new issue.
+
+- **Suggesting Features**: Use the [Issues](https://github.com/doptime/redisdb/issues) page to suggest new features or improvements.
+
+- **Pull Requests**: Submit pull requests for bug fixes or new features. Please ensure your code adheres to the project's coding standards.
+
+- **Documentation**: Help improve the documentation by submitting corrections or additions.
+
+## Reporting Security Vulnerabilities
+
+If you discover a security vulnerability, please report it privately by email to [security@example.com](mailto:security@example.com).
+
+## Developer Certificate of Origin
+
+By contributing to this project, you agree to the [Developer Certificate of Origin](https://developercertificate.org/).
+
+## License Agreement
+
+By using this software, you agree to the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
+## Copyright
+
+© 2023 Your Company Name. All rights reserved.
+
+## Trademarks
+
+Redis is a trademark of Salvatore Sanfilippo. Any use of the term Redis in this project is for informational purposes only and does not imply any endorsement or affiliation with Salvatore Sanfilippo or Redis Ltd.
+
+## Authors
+
+- **John D. Rockefeller**: [john@rockefeller.com](mailto:john@rockefeller.com)
+
+- **Nikola Tesla**: [nikola@tesla.com](mailto:nikola@tesla.com)
+
+- **Claude Shannon**: [claude@shannon.com](mailto:claude@shannon.com)
+
+- **Vannevar Bush**: [vannevar@bush.com](mailto:vannevar@bush.com)
+
+- **Alan Turing**: [alan@turing.com](mailto:alan@turing.com)
+
+## Acknowledgments
+
+- The Go programming language team for their continuous improvement and support.
+
+- The Redis community for creating such a powerful and flexible in-memory data store.
+
+- The msgpack community for providing an efficient serialization format.
+
+## Third-Party Libraries
+
+- [Concurrent-Map](https://github.com/orcaman/concurrent-map): A high-performance concurrent map for Go.
+
+- [Docusaurus](https://docusaurus.io/): A static site generator for documentation.
+
+## Support This Project
+
+If you find RedisDB useful, consider starring the [GitHub repository](https://github.com/doptime/redisdb) to show your support.
+
+## Citation
+
+If you use RedisDB in your research or project, please consider citing it:
+
+```
+@misc{redisdb,
+  author = {Your Company Name},
+  title = {RedisDB: A Type-Safe Redis Abstraction for Go},
+  year = {2023},
+  url = {https://github.com/doptime/redisdb}
+}
+```
+
+## Contact Information
+
+For more information or to get in touch, please contact [contact@example.com](mailto:contact@example.com).
+
+## Building from Source
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/doptime/redisdb.git
+   ```
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd redisdb
+   ```
+
+3. Build the project:
+
+   ```bash
+   go build
+   ```
+
+## Contributing Code
+
+- Fork the repository.
+
+- Make your changes in a new branch.
+
+- Ensure all tests pass.
+
+- Submit a pull request.
+
+## Code Review Process
+
+Pull requests are reviewed by maintainers. Feedback may be provided, and changes may be requested before merging.
+
+## Testing
+
+To run tests, use the following command:
+
+```bash
+go test ./...
+```
+
+## Release History
+
+- **v1.0.0**: Initial release with basic data structure abstractions.
+
+- **v1.1.0**: Added primary key support and automatic management.
+
+## How to Upgrade
+
+Check the [changelog](changelog.md) for details on changes between versions. Follow the installation instructions to update to the latest version.
+
+## Troubleshooting
+
+- **Error connecting to Redis**: Ensure that your Redis server is running and that the connection parameters are correct.
+
+- **Serialization errors**: Make sure that the structs you're using are properly tagged for msgpack serialization.
+
+## FAQ
+
+### General Questions
+
+- **Q: Is RedisDB compatible with all Redis versions?**
+
+  A: RedisDB aims to be compatible with most Redis versions, but some features might require specific versions. Check the documentation for version requirements.
+
+- **Q: Can I use RedisDB with multiple Redis data sources?**
+
+  A: Yes, RedisDB supports multiple data sources through the `WithRds` option.
+
+### Technical Questions
+
+- **Q: How does RedisDB handle errors during serialization?**
+
+  A: Errors during serialization are returned by the methods that perform serialization, ensuring that issues are caught and handled appropriately.
+
+- **Q: Can I register custom modifiers for my structs?**
+
+  A: Yes, you can register custom modifiers using the `WithModifier` option when creating a context.
+
+## Support Channels
+
+- **GitHub Issues**: For bug reports and feature requests.
+
+- **Discussions**: For general questions and discussions.
+
+- **Email**: For private inquiries or support: [support@example.com](mailto:support@example.com)
+
+## Contribution Guidelines
+
+- **Coding Standards**: Follow the Go code formatting standards.
+
+- **Testing**: Ensure all new features are accompanied by tests.
+
+- **Documentation**: Update documentation accordingly for any changes or new features.
+
+## Code of Conduct
+
+All contributors and participants in the RedisDB project are expected to adhere to the [Code of Conduct](code_of_conduct.md).
+
+## Known Limitations
+
+- **Reflection Overhead**: Some operations might have reflection overhead, which could affect performance in high-throughput scenarios.
+
+- **Limited Data Structure Support**: Not all Redis data structures are currently supported. Contributions are welcome to expand this support.
+
+## How to Contribute
+
+- **Reporting Bugs**: Check the [Issues](https://github.com/doptime/redisdb/issues) page to see if your bug is already reported. If not, create a new issue.
+
+- **Suggesting Features**: Use the [Issues](https://github.com/doptime/redisdb/issues) page to suggest new features or improvements.
+
+- **Pull Requests**: Submit pull requests for bug fixes or new features. Please ensure your code adheres to the project's coding standards.
+
+- **Documentation**: Help improve the documentation by submitting corrections or additions.
+
+## Reporting Security Vulnerabilities
+
+If you discover a security vulnerability, please report it privately by email to [security@example.com](mailto:security@example.com).
+
+## Developer Certificate of Origin
+
+By contributing to this project, you agree to the [Developer Certificate of Origin](https://developercertificate.org/).
+
+## License Agreement
+
+By using this software, you agree to the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
+## Copyright
+
+© 2023 Your Company Name. All rights reserved.
+
+## Trademarks
+
+Redis is a trademark of Salvatore Sanfilippo. Any use of the term Redis in this project is for informational purposes only and does not imply any endorsement or affiliation with Salvatore Sanfilippo or Redis Ltd.
+
+## Authors
+
+- **John D. Rockefeller**: [john@rockefeller.com](mailto:john@rockefeller.com)
+
+- **Nikola Tesla**: [nikola@tesla.com](mailto:nikola@tesla.com)
+
+- **Claude Shannon**: [claude@shannon.com](mailto:claude@shannon.com)
+
+- **Vannevar Bush**: [vannevar@bush.com](mailto:vannevar@bush.com)
+
+- **Alan Turing**: [alan@turing.com](mailto:alan@turing.com)
+
+## Acknowledgments
+
+- The Go programming language team for their continuous improvement and support.
+
+- The Redis community for creating such a powerful and flexible in-memory data store.
+
+- The msgpack community for providing an efficient serialization format.
+
+## Third-Party Libraries
+
+- [Concurrent-Map](https://github.com/orcaman/concurrent-map): A high-performance concurrent map for Go.
+
+- [Docusaurus](https://docusaurus.io/): A static site generator for documentation.
+
+## Support This Project
+
+If you find RedisDB useful, consider starring the [GitHub repository](https://github.com/doptime/redisdb) to show your support.
+
+## Citation
+
+If you use RedisDB in your research or project, please consider citing it:
+
+```
+@misc{redisdb,
+  author = {Your Company Name},
+  title = {RedisDB: A Type-Safe Redis Abstraction for Go},
+  year = {2023},
+  url = {https://github.com/doptime/redisdb}
+}
+```
+
+## Contact Information
+
+For more information or to get in touch, please contact [contact@example.com](mailto:contact@example.com).
+
+## Building from Source
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/doptime/redisdb.git
+   ```
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd redisdb
+   ```
+
+3. Build the project:
+
+   ```bash
+   go build
+   ```
+
+## Contributing Code
+
+- Fork the repository.
+
+- Make your changes in a new branch.
+
+- Ensure all tests pass.
+
+- Submit a pull request.
+
+## Code Review Process
+
+Pull requests are reviewed by maintainers. Feedback may be provided, and changes may be requested before merging.
+
+## Testing
+
+To run tests, use the following command:
+
+```bash
+go test ./...
+```
+
+## Release History
+
+- **v1.0.0**: Initial release with basic data structure abstractions.
+
+- **v1.1.0**: Added primary key support and automatic management.
+
+## How to Upgrade
+
+Check the [changelog](changelog.md) for details on changes between versions. Follow the installation instructions to update to the latest version.
+
+## Troubleshooting
+
+- **Error connecting to Redis**: Ensure that your Redis server is running and that the connection parameters are correct.
+
+- **Serialization errors**: Make sure that the structs you're using are properly tagged for msgpack serialization.
+
+## FAQ
+
+### General Questions
+
+- **Q: Is RedisDB compatible with all Redis versions?**
+
+  A: RedisDB aims to be compatible with most Redis versions, but some features might require specific versions. Check the documentation for version requirements.
+
+- **Q: Can I use RedisDB with multiple Redis data sources?**
+
+  A: Yes, RedisDB supports multiple data sources through the `WithRds` option.
+
+### Technical Questions
+
+- **Q: How does RedisDB handle errors during serialization?**
+
+  A: Errors during serialization are returned by the methods that perform serialization, ensuring that issues are caught and handled appropriately.
+
+- **Q: Can I register custom modifiers for my structs?**
+
+  A: Yes, you can register custom modifiers using the `WithModifier` option when creating a context.
+
+## Support Channels
+
+- **GitHub Issues**: For bug reports and feature requests.
+
+- **Discussions**: For general questions and discussions.
+
+- **Email**: For private inquiries or support: [support@example.com](mailto:support@example.com)
+
+## Contribution Guidelines
+
+- **Coding Standards**: Follow the Go code formatting standards.
+
+- **Testing**: Ensure all new features are accompanied by tests.
+
+- **Documentation**: Update documentation accordingly for any changes or new features.
+
+## Code of Conduct
+
+All contributors and participants in the RedisDB project are expected to adhere to the [Code of Conduct](code_of_conduct.md).
+
+## Known Limitations
+
+- **Reflection Overhead**: Some operations might have reflection overhead, which could affect performance in high-throughput scenarios.
+
+- **Limited Data Structure Support**: Not all Redis data structures are currently supported. Contributions are welcome to expand this support.
+
+## How to Contribute
+
+- **Reporting Bugs**: Check the [Issues](https://github.com/doptime/redisdb/issues) page to see if your bug is already reported. If not, create a new issue.
+
+- **Suggesting Features**: Use the [Issues](https://github.com/doptime/redisdb/issues) page to suggest new features or improvements.
+
+- **Pull Requests**: Submit pull requests for bug fixes or new features. Please ensure your code adheres to the project's coding standards.
+
+- **Documentation**: Help improve the documentation by submitting corrections or additions.
+
+## Reporting Security Vulnerabilities
+
+If you discover a security vulnerability, please report it privately by email to [security@example.com](mailto:security@example.com).
+
+## Developer Certificate of Origin
+
+By contributing to this project, you agree to the [Developer Certificate of Origin](https://developercertificate.org/).
+
+## License Agreement
+
+By using this software, you agree to the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
+## Copyright
+
+© 2023 Your Company Name. All rights reserved.
+
+## Trademarks
+
+Redis is a trademark of Salvatore Sanfilippo. Any use of the term Redis in this project is for informational purposes only and does not imply any endorsement or affiliation with Salvatore Sanfilippo or Redis Ltd.
+
+## Authors
+
+- **John D. Rockefeller**: [john@rockefeller.com](mailto:john@rockefeller.com)
+
+- **Nikola Tesla**: [nikola@tesla.com](mailto:nikola@tesla.com)
+
+- **Claude Shannon**: [claude@shannon.com](mailto:claude@shannon.com)
+
+- **Vannevar Bush**: [vannevar@bush.com](mailto:vannevar@bush.com)
+
+- **Alan Turing**: [alan@turing.com](mailto:alan@turing.com)
+
+## Acknowledgments
+
+- The Go programming language team for their continuous improvement and support.
+
+- The Redis community for creating such a powerful and flexible in-memory data store.
+
+- The msgpack community for providing an efficient serialization format.
+
+## Third-Party Libraries
+
+- [Concurrent-Map](https://github.com/orcaman/concurrent-map): A high-performance concurrent map for Go.
+
+- [Docusaurus](https://docusaurus.io/): A static site generator for documentation.
+
+## Support This Project
+
+If you find RedisDB useful, consider starring the [GitHub repository](https://github.com/doptime/redisdb) to show your support.
+
+## Citation
+
+If you use RedisDB in your research or project, please consider citing it:
+
+```
+@misc{redisdb,
+  author = {Your Company Name},
+  title = {RedisDB: A Type-Safe Redis Abstraction for Go},
+  year = {2023},
+  url = {https://github.com/doptime/redisdb}
+}
+```
+
+## Contact Information
+
+For more information or to get in touch, please contact [contact@example.com](mailto:contact@example.com).
+
+## Building from Source
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/doptime/redisdb.git
+   ```
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd redisdb
+   ```
+
+3. Build the project:
+
+   ```bash
+   go build
+   ```
+
+## Contributing Code
+
+- Fork the repository.
+
+- Make your changes in a new branch.
+
+- Ensure all tests pass.
+
+- Submit a pull request.
+
+## Code Review Process
+
+Pull requests are reviewed by maintainers. Feedback may be provided, and changes may be requested before merging.
+
+## Testing
+
+To run tests, use the following command:
+
+```bash
+go test ./...
+```
+
+## Release History
+
+- **v1.0.0**: Initial release with basic data structure abstractions.
+
+- **v1.1.0**: Added primary key support and automatic management.
+
+## How to Upgrade
+
+Check the [changelog](changelog.md) for details on changes between versions. Follow the installation instructions to update to the latest version.
+
+## Troubleshooting
+
+- **Error connecting to Redis**: Ensure that your Redis server is running and that the connection parameters are correct.
+
+- **Serialization errors**: Make sure that the structs you're using are properly tagged for msgpack serialization.
+
+## FAQ
+
+### General Questions
+
+- **Q: Is RedisDB compatible with all Redis versions?**
+
+  A: RedisDB aims to be compatible with most Redis versions, but some features might require specific versions. Check the documentation for version requirements.
+
+- **Q: Can I use RedisDB with multiple Redis data sources?**
+
+  A: Yes, RedisDB supports multiple data sources through the `WithRds` option.
+
+### Technical Questions
+
+- **Q: How does RedisDB handle errors during serialization?**
+
+  A: Errors during serialization are returned by the methods that perform serialization, ensuring that issues are caught and handled appropriately.
+
+- **Q: Can I register custom modifiers for my structs?**
+
+  A: Yes, you can register custom modifiers using the `WithModifier` option when creating a context.
+
+## Support Channels
+
+- **GitHub Issues**: For bug reports and feature requests.
+
+- **Discussions**: For general questions and discussions.
+
+- **Email**: For private inquiries or support: [support@example.com](mailto:support@example.com)
+
+## Contribution Guidelines
+
+- **Coding Standards**: Follow the Go code formatting standards.
+
+- **Testing**: Ensure all new features are accompanied by tests.
+
+- **Documentation**: Update documentation accordingly for any changes or new features.
+
+## Code of Conduct
+
+All contributors and participants in the RedisDB project are expected to adhere to the [Code of Conduct](code_of_conduct.md).
+
+## Known Limitations
+
+- **Reflection Overhead**: Some operations might have reflection overhead, which could affect performance in high-throughput scenarios.
+
+- **Limited Data Structure Support**: Not all Redis data structures are currently supported. Contributions are welcome to expand this support.
+
+## How to Contribute
+
+- **Reporting Bugs**: Check the [Issues](https://github.com/doptime/redisdb/issues) page to see if your bug is already reported. If not, create a new issue.
+
+- **Suggesting Features**: Use the [Issues](https://github.com/doptime/redisdb/issues) page to suggest new features or improvements.
+
+- **Pull Requests**: Submit pull requests for bug fixes or new features. Please ensure your code adheres to the project's coding standards.
+
+- **Documentation**: Help improve the documentation by submitting corrections or additions.
+
+## Reporting Security Vulnerabilities
+
+If you discover a security vulnerability, please report it privately by email to [security@example.com](mailto:security@example.com).
+
+## Developer Certificate of Origin
+
+By contributing to this project, you agree to the [Developer Certificate of Origin](https://developercertificate.org/).
+
+## License Agreement
+
+By using this software, you agree to the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
+## Copyright
+
+© 2023 Your Company Name. All rights reserved.
+
+## Trademarks
+
+Redis is a trademark of Salvatore Sanfilippo. Any use of the term Redis in this project is for informational purposes only and does not imply any endorsement or affiliation with Salvatore Sanfilippo or Redis Ltd.
+
+## Authors
+
+- **John D. Rockefeller**: [john@rockefeller.com](mailto:john@rockefeller.com)
+
+- **Nikola Tesla**: [nikola@tesla.com](mailto:nikola@tesla.com)
+
+- **Claude Shannon**: [claude@shannon.com](mailto:claude@shannon.com)
+
+- **Vannevar Bush**: [vannevar@bush.com](mailto:vannevar@bush.com)
+
+- **Alan Turing**: [alan@turing.com](mailto:alan@turing.com)
+
+## Acknowledgments
+
+- The Go programming language team for their continuous improvement and support.
+
+- The Redis community for creating such a powerful and flexible in-memory data store.
+
+- The msgpack community for providing an efficient serialization format.
+
+## Third-Party Libraries
+
+- [Concurrent-Map](https://github.com/orcaman/concurrent-map): A high-performance concurrent map for Go.
+
+- [Docusaurus](https://docusaurus.io/): A static site generator for documentation.
+
+## Support This Project
+
+If you find RedisDB useful, consider starring the [GitHub repository](https://github.com/doptime/redisdb) to show your support.
+
+## Citation
+
+If you use RedisDB in your research or project, please consider citing it:
+
+```
+@misc{redisdb,
+  author = {Your Company Name},
+  title = {RedisDB: A Type-Safe Redis Abstraction for Go},
+  year = {2023},
+  url = {https://github.com/doptime/redisdb}
+}
+```
+
+## Contact Information
+
+For more information or to get in touch, please contact [contact@example.com](mailto:contact@example.com).
+
+## Building from Source
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/doptime/redisdb.git
+   ```
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd redisdb
+   ```
+
+3. Build the project:
+
+   ```bash
+   go build
+   ```
+
+## Contributing Code
+
+- Fork the repository.
+
+- Make your changes in a new branch.
+
+- Ensure all tests pass.
+
+- Submit a pull request.
+
+## Code Review Process
+
+Pull requests are reviewed by maintainers. Feedback may be provided, and changes may be requested before merging.
+
+## Testing
+
+To run tests, use the following command:
+
+```bash
+go test ./...
+```
+
+## Release History
+
+- **v1.0.0**: Initial release with basic data structure abstractions.
+
+- **v1.1.0**: Added primary key support and automatic management.
+
+## How to Upgrade
+
+Check the [changelog](changelog.md) for details on changes between versions. Follow the installation instructions to update to the latest version.
+
+## Troubleshooting
+
+- **Error connecting to Redis**: Ensure that your Redis server is running and that the connection parameters are correct.
+
+- **Serialization errors**: Make sure that the structs you're using are properly tagged for msgpack serialization.
+
+## FAQ
+
+### General Questions
+
+- **Q: Is RedisDB compatible with all Redis versions?**
+
+  A: RedisDB aims to be compatible with most Redis versions, but some features might require specific versions. Check the documentation for version requirements.
+
+- **Q: Can I use RedisDB with multiple Redis data sources?**
+
+  A: Yes, RedisDB supports multiple data sources through the `WithRds` option.
+
+### Technical Questions
+
+- **Q: How does RedisDB handle errors during serialization?**
+
+  A: Errors during serialization are returned by the methods that perform serialization, ensuring that issues are caught and handled appropriately.
+
+- **Q: Can I register custom modifiers for my structs?**
+
+  A: Yes, you can register custom modifiers using the `WithModifier` option when creating a context.
+
+## Support Channels
+
+- **GitHub Issues**: For bug reports and feature requests.
+
+- **Discussions**: For general questions and discussions.
+
+- **Email**: For private inquiries or support: [support@example.com](mailto:support@example.com)
+
+## Contribution Guidelines
+
+- **Coding Standards**: Follow the Go code formatting standards.
+
+- **Testing**: Ensure all new features are accompanied by tests.
+
+- **Documentation**: Update documentation accordingly for any changes or new features.
+
+## Code of Conduct
+
+All contributors and participants in the RedisDB project are expected to adhere to the [Code of Conduct](code_of_conduct.md).
+
+## Known Limitations
+
+- **Reflection Overhead**: Some operations might have reflection overhead, which could affect performance in high-throughput scenarios.
+
+- **Limited Data Structure Support**: Not all Redis data structures are currently supported. Contributions are welcome to expand this support.
+
+## How to Contribute
+
+- **Reporting Bugs**: Check the [Issues](https://github.com/doptime/redisdb/issues) page to see if your bug is already reported. If not, create a new issue.
+
+- **Suggesting Features**: Use the [Issues](https://github.com/doptime/redisdb/issues) page to suggest new features or improvements.
+
+- **Pull Requests**: Submit pull requests for bug fixes or new features. Please ensure your code adheres to the project's coding standards.
+
+- **Documentation**: Help improve the documentation by submitting corrections or additions.
+
+## Reporting Security Vulnerabilities
+
+If you discover a security vulnerability, please report it privately by email to [security@example.com](mailto:security@example.com).
+
+## Developer Certificate of Origin
+
+By contributing to this project, you agree to the [Developer Certificate of Origin](https://developercertificate.org/).
+
+## License Agreement
+
+By using this software, you agree to the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
+## Copyright
+
+© 2023 Your Company Name. All rights reserved.
+
+## Trademarks
+
+Redis is a trademark of Salvatore Sanfilippo. Any use of the term Redis in this project is for informational purposes only and does not imply any endorsement or affiliation with Salvatore Sanfilippo or Redis Ltd.
+
+## Authors
+
+- **John D. Rockefeller**: [john@rockefeller.com](mailto:john@rockefeller.com)
+
+- **Nikola Tesla**: [nikola@tesla.com](mailto:nikola@tesla.com)
+
+- **Claude Shannon**: [claude@shannon.com](mailto:claude@shannon.com)
+
+- **Vannevar Bush**: [vannevar@bush.com](mailto:vannevar@bush.com)
+
+- **Alan Turing**: [alan@turing.com](mailto:alan@turing.com)
+
+## Acknowledgments
+
+- The Go programming language team for their continuous improvement and support.
+
+- The Redis community for creating such a powerful and flexible in-memory data store.
+
+- The msgpack community for providing an efficient serialization format.
+
+## Third-Party Libraries
+
+- [Concurrent-Map](https://github.com/orcaman/concurrent-map): A high-performance concurrent map for Go.
+
+- [Docusaurus](https://docusaurus.io/): A static site generator for documentation.
+
+## Support This Project
+
+If you find RedisDB useful, consider starring the [GitHub repository](https://github.com/doptime/redisdb) to show your support.
+
+## Citation
+
+If you use RedisDB in your research or project, please consider citing it:
+
+```
+@misc{redisdb,
+  author = {Your Company Name},
+  title = {RedisDB: A Type-Safe Redis Abstraction for Go},
+  year = {2023},
+  url = {https://github.com/doptime/redisdb}
+}
+```
+
+## Contact Information
+
+For more information or to get in touch, please contact [contact@example.com](mailto:contact@example.com).
+
+## Building from Source
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/doptime/redisdb.git
+   ```
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd redisdb
+   ```
+
+3. Build the project:
+
+   ```bash
+   go build
+   ```
+
+## Contributing Code
+
+- Fork the repository.
+
+- Make your changes in a new branch.
+
+- Ensure all tests pass.
+
+- Submit a pull request.
+
+## Code Review Process
+
+Pull requests are reviewed by maintainers. Feedback may be provided, and changes may be requested before merging.
+
+## Testing
+
+To run tests, use the following command:
+
+```bash
+go test ./...
+```
+
+## Release History
+
+- **v1.0.0**: Initial release with basic data structure abstractions.
+
+- **v1.1.0**: Added primary key support and automatic management.
+
+## How to Upgrade
+
+Check the [changelog](changelog.md) for details on changes between versions. Follow the installation instructions to update to the latest version.
+
+## Troubleshooting
+
+- **Error connecting to Redis**: Ensure that your Redis server is running and that the connection parameters are correct.
+
+- **Serialization errors**: Make sure that the structs you're using are properly tagged for msgpack serialization.
+
+## FAQ
+
+### General Questions
+
+- **Q: Is RedisDB compatible with all Redis versions?**
+
+  A: RedisDB aims to be compatible with most Redis versions, but some features might require specific versions. Check the documentation for version requirements.
+
+- **Q: Can I use RedisDB with multiple Redis data sources?**
+
+  A: Yes, RedisDB supports multiple data sources through the `WithRds` option.
+
+### Technical Questions
+
+- **Q: How does RedisDB handle errors during serialization?**
+
+  A: Errors during serialization are returned by the methods that perform serialization, ensuring that issues are caught and handled appropriately.
+
+- **Q: Can I register custom modifiers for my structs?**
+
+  A: Yes, you can register custom modifiers using the `WithModifier` option when creating a context.
+
+## Support Channels
+
+- **GitHub Issues**: For bug reports and feature requests.
+
+- **Discussions**: For general questions and discussions.
+
+- **Email**: For private inquiries or support: [support@example.com](mailto:support@example.com)
+
+## Contribution Guidelines
+
+- **Coding Standards**: Follow the Go code formatting standards.
+
+- **Testing**: Ensure all new features are accompanied by tests.
+
+- **Documentation**: Update documentation accordingly for any changes or new features.
+
+## Code of Conduct
+
+All contributors and participants in the RedisDB project are expected to adhere to the [Code of Conduct](code_of_conduct.md).
+
+## Known Limitations
+
+- **Reflection Overhead**: Some operations might have reflection overhead, which could affect performance in high-throughput scenarios.
+
+- **Limited Data Structure Support**: Not all Redis data structures are currently supported. Contributions are welcome to expand this support.
+
+## How to Contribute
+
+- **Reporting Bugs**: Check the [Issues](https://github.com/doptime/redisdb/issues) page to see if your bug is already reported. If not, create a new issue.
+
+- **Suggesting Features**: Use the [Issues](https://github.com/doptime/redisdb/issues) page to suggest new features or improvements.
+
+- **Pull Requests**: Submit pull requests for bug fixes or new features. Please ensure your code adheres to the project's coding standards.
+
+- **Documentation**: Help improve the documentation by submitting corrections or additions.
+
+## Reporting Security Vulnerabilities
+
+If you discover a security vulnerability, please report it privately by email to [security@example.com](mailto:security@example.com).
+
+## Developer Certificate of Origin
+
+By contributing to this project, you agree to the [Developer Certificate of Origin](https://developercertificate.org/).
+
+## License Agreement
+
+By using this software, you agree to the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
+## Copyright
+
+© 2023 Your Company Name. All rights reserved.
+
+## Trademarks
+
+Redis is a trademark of Salvatore Sanfilippo. Any use of the term Redis in this project is for informational purposes only and does not imply any endorsement or affiliation with Salvatore Sanfilippo or Redis Ltd.
+
+## Authors
+
+- **John D. Rockefeller**: [john@rockefeller.com](mailto:john@rockefeller.com)
+
+- **Nikola Tesla**: [nikola@tesla.com](mailto:nikola@tesla.com)
+
+- **Claude Shannon**: [claude@shannon.com](mailto:claude@shannon.com)
+
+- **Vannevar Bush**: [vannevar@bush.com](mailto:vannevar@bush.com)
+
+- **Alan Turing**: [alan@turing.com](mailto:alan@turing.com)
+
+## Acknowledgments
+
+- The Go programming language team for their continuous improvement and support.
+
+- The Redis community for creating such a powerful and flexible in-memory data store.
+
+- The msgpack community for providing an efficient serialization format.
+
+## Third-Party Libraries
+
+- [Concurrent-Map](https://github.com/orcaman/concurrent-map): A high-performance concurrent map for Go.
+
+- [Docusaurus](https://docusaurus.io/): A static site generator for documentation.
+
+## Support This Project
+
+If you find RedisDB useful, consider starring the [GitHub repository](https://github.com/doptime/redisdb) to show your support.
+
+## Citation
+
+If you use RedisDB in your research or project, please consider citing it:
+
+```
+@misc{redisdb,
+  author = {Your Company Name},
+  title = {RedisDB: A Type-Safe Redis Abstraction for Go},
+  year = {2023},
+  url = {https://github.com/doptime/redisdb}
+}
+```
+
+## Contact Information
+
+For more information or to get in touch, please contact [contact@example.com](mailto:contact@example.com).

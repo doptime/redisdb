@@ -84,13 +84,6 @@ func ToTitleCase(fieldValue interface{}, tagParam string) (interface{}, error) {
 	return fieldValue, nil
 }
 
-// FormatDate formats a time.Time value according to the provided format.
-func FormatDate(fieldValue interface{}, tagParam string) (interface{}, error) {
-	if t, ok := fieldValue.(time.Time); ok {
-		return t.Format(tagParam), nil
-	}
-	return fieldValue, nil
-}
 func ApplyCounter(fieldValue interface{}, tagParam string) (interface{}, error) {
 	if v, ok := fieldValue.(int); ok {
 		return v + 1, nil
@@ -137,15 +130,14 @@ func RegisterStructModifiers(extraModifiers map[string]ModifierFunc, structType 
 
 	modifiers := &StructModifiers{
 		modifierRegistry: map[string]ModifierFunc{
-			"default":    ApplyDefault,
-			"unixtime":   ApplyUnixTime,
-			"counter":    ApplyCounter,
-			"nanoid":     GenerateNanoidFunc,
-			"trim":       TrimSpaces,
-			"lowercase":  ToLowercase,
-			"uppercase":  ToUppercase,
-			"title":      ToTitleCase,
-			"dateFormat": FormatDate,
+			"default":   ApplyDefault,
+			"unixtime":  ApplyUnixTime,
+			"counter":   ApplyCounter,
+			"nanoid":    GenerateNanoidFunc,
+			"trim":      TrimSpaces,
+			"lowercase": ToLowercase,
+			"uppercase": ToUppercase,
+			"title":     ToTitleCase,
 		},
 		fieldModifiers: []*FieldModifier{},
 		ValType:        structType,
@@ -349,10 +341,9 @@ func isZero(v reflect.Value) bool {
 
 // Example usage
 type ExampleStruct struct {
-	Name     string    `mod:"trim,lowercase"`
-	Age      int       `mod:"default=18"`
-	UnixTime int64     `mod:"unixtime=ms,force"`
-	Counter  int64     `mod:"counter,force"`
-	Email    string    `mod:"lowercase,trim"`
-	Created  time.Time `mod:"dateFormat=2006-01-02T15:04:05Z07:00"`
+	Name     string `mod:"trim,lowercase"`
+	Age      int    `mod:"default=18"`
+	UnixTime int64  `mod:"unixtime=ms,force"`
+	Counter  int64  `mod:"counter,force"`
+	Email    string `mod:"lowercase,trim"`
 }

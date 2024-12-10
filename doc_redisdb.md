@@ -29,8 +29,7 @@ For detailed documentation on each data structure type, refer to the respective 
 - [SetKey Documentation](doc_setkey.md)
 - [StringKey Documentation](doc_stringkey.md)
 - [ZSetKey Documentation](doc_zsetkey.md)
-- 
-- [Auto Field Modification Example](doc_mod_example.md)
+
 ### Error Handling
 
 Most methods in RedisDB return errors that you should check to handle failures gracefully. Always ensure to handle errors to maintain the robustness of your application.

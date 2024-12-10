@@ -1,0 +1,1 @@
+Now has used a separate DOC_MON_EXAMPLE document to display the usage of the Mod in Struct Field Tag. So please remove the MOD tutorial descripted in other DOC_XXX.MD documents to reduce duplicate work and improve the degree of modularization of the document.

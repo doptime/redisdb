@@ -1,0 +1,1089 @@
+Alright, I've got this task to analyze a system called RedisDB, which seems to be a Go package for interacting with Redis in a type-safe manner. It looks like it's designed to make working with Redis easier for Go developers by providing abstractions for different Redis data types like hashes, lists, sets, strings, and sorted sets (zsets). The package also includes features for automatic serialization using msgpack, field modifiers for data validation and transformation, and even generating documentation for data structures.
+
+First, I need to understand what RedisDB is all about. From the files provided, especially the `CtxMap.go` and `key_*.go` files, it's clear that RedisDB is a set of generic types and functions that wrap around the go-redis client to provide a more convenient and safer way to work with Redis data types in Go applications. The use of generics allows developers to specify the types of keys and values they're working with, which should help prevent type errors and make the code more maintainable.
+
+The `intention.evolab.md` file outlines the plan to create documentation for the RedisDB project itself, similar to the existing documentation for specific data types like hashes and lists. The idea is to have a summary documentation that introduces the project, its features, and how it can be used in different scenarios. This makes sense because developers need a high-level overview before delving into specific data type usage.
+
+Looking at the `readme.md` file, it seems to be a placeholder for the summary documentation, which aligns with the intention outlined. The readme should serve as the entry point for developers to understand the package's purpose, key features, and how to get started.
+
+I also see a file called `mod.go`, which handles field modifiers. These modifiers can be applied to struct fields during serialization and deserialization, performing operations like trimming spaces, converting to lowercase, setting default values, etc. This is a useful feature because it reduces boilerplate code and ensures that data is consistently formatted.
+
+The `versions.md` file appears to list different versions or editions of the RedisDB package, such as open-source, professional, and enterprise versions, each with increasing features and support. This suggests that there's a plan to monetize the package by offering advanced features and support for paying customers, while keeping a基础 version open-source.
+
+In the `webdataschema.go` file, there's code for registering web data schemas, which might be related to generating API documentation or providing a way to define data structures for web applications. It's a bit unclear from this snippet, but it seems to involve creating instances of data structures and storing their schemas in Redis for documentation purposes.
+
+Now, considering the task to remove Mod tutorials from other DOC_XXX.MD files since there's a separate `doc_mod_example.md` for that purpose, I need to ensure that the documentation is modular and doesn't repeat information unnecessarily. This will make the documentation easier to maintain and navigate for users.
+
+To achieve this, I should review each `DOC_XXX.MD` file (like `doc_hashkey.md`, `doc_listKey.md`, etc.) and check if they include sections on how to use modifiers with their respective data types. If they do, I should remove those sections and instead refer users to the `doc_mod_example.md` for detailed information on using modifiers.
+
+This approach has a couple of benefits:
+
+1. **Reduced Duplication:** By centralizing the modifier usage in one document, I prevent redundancy and ensure that the information is consistent across the documentation.
+
+2. **Improved Modularity:** Each documentation file can focus on its specific data type without delving into shared features like modifiers, making the content更为专注和易读。
+
+To implement this, I'll need to:
+
+- Open each `DOC_XXX.MD` file and look for sections that explain or show examples of using modifiers.
+
+- Remove those sections and add a note or a link directing users to `doc_mod_example.md` for information on modifiers.
+
+- Ensure that `doc_mod_example.md` is comprehensive enough to cover all use cases of modifiers, so users don't feel like they're missing important information.
+
+I should also consider whether there are any specific nuances or examples related to modifiers when used with particular data types. If so, perhaps those examples should remain in the respective data type documentation files, with a reference to the main modifiers document for more details.
+
+Additionally, I need to make sure that the removal of modifier information doesn't break any tutorials or examples that rely on it. If there are any such dependencies, I should update those tutorials accordingly.
+
+In summary, my task is to review the existing documentation files, remove duplicate information about modifiers, and ensure that users are directed to the appropriate document for learning about modifiers. This will help maintain a clean and modular documentation structure, making it easier for developers to understand and use the RedisDB package effectively.
+
+## Final Solution
+To address the task of removing duplicate modifier tutorials from the individual data type documentation files and centralizing the information in a separate document, we need to ensure that the documentation is clean, modular, and easy to navigate. This approach prevents redundancy and ensures consistency in the information provided about modifiers.
+
+### Approach
+
+1. **Review Documentation Files:** Examine each data type documentation file (e.g., `doc_hashkey.md`, `doc_listKey.md`, etc.) to identify sections that explain or provide examples of using modifiers.
+2. **Remove Duplicate Sections:** Eliminate these sections from the individual files to prevent重复信息.
+3. **Centralize Modifier Information:** Ensure that `doc_mod_example.md` is comprehensive and covers all use cases of modifiers. This document should serve as the primary resource for understanding how to use modifiers with any data type.
+4. **Add References:** In each data type documentation file, add a note or a link directing users to `doc_mod_example.md` for detailed information on using modifiers.
+
+### Solution Code
+
+#### Updated `doc_hashkey.md`
+
+```markdown
+---
+slug: data-hashkey
+title: HashKey
+type:  docs
+sidebar_position: 1
+---
+
+## HashKey Documentation
+
+`HashKey` is a type provided by the `redisdb` package to interact with Redis hash keys in a type-safe manner. Redis hash keys are maps between string fields and string values, which can be used to represent complex objects or dictionaries.
+
+In the `redisdb` package, `HashKey` is defined as a generic type that allows specifying the key and value types, making it easier to work with typed data without manual marshaling and unmarshaling.
+
+## Creating a HashKey Context
+
+To use `HashKey`, you first need to create a context that represents your hash key in Redis. This is done using the `NewHashKey` function, which takes optional setters to configure the context.
+
+```go
+func NewHashKey[k comparable, v any](ops ...opSetter) *HashKey[k, v]
+```
+
+### Optional Parameters
+
+- `WithKey(key string)`: Allows specifying a custom key name for the hash. If not provided, the key name is inferred from the type of `v`.
+
+- `WithRds(dataSource string)`: Specifies the Redis data source to use. By default, it uses "default".
+
+- `WithModifier(extraModifiers map[string]ModifierFunc)`: Registers additional modifiers for the fields of `v`.
+
+### Example
+
+```go
+type User struct {
+    ID   string `msgpack:"id" mod:"trim,lowercase"`
+    Name string `msgpack:"name" mod:"trim"`
+}
+
+keyUser := redisdb.NewHashKey[string, *User](redisdb.WithKey("users"))
+```
+
+## Basic Operations
+
+### Setting Hash Fields
+
+To set fields in the hash, use the `HSet` method. This can take either a map of keys to values or a list of key-value pairs.
+
+```go
+func (ctx *HashKey[k, v]) HSet(values ...interface{}) error
+func (ctx *HashKey[k, v]) HMSet(kvMap map[k]v) error
+```
+
+#### Example
+
+```go
+user := &User{ID: "1", Name: "Alice"}
+keyUser.HSet("1", user)
+```
+
+### Getting Hash Fields
+
+Retrieve a specific field from the hash using `HGet`.
+
+```go
+func (ctx *HashKey[k, v]) HGet(field k) (value v, err error)
+```
+
+#### Example
+
+```go
+retrievedUser, err := keyUser.HGet("1")
+if err == nil {
+    fmt.Println("Retrieved User:", retrievedUser.Name)
+}
+```
+
+### Deleting Hash Fields
+
+Delete a specific field from the hash using `HDel`.
+
+```go
+func (ctx *HashKey[k, v]) HDel(fields ...k) error
+```
+
+#### Example
+
+```go
+err := keyUser.HDel("1")
+if err == nil {
+    fmt.Println("Field deleted successfully.")
+}
+```
+
+### Checking Field Existence
+
+Check if a field exists in the hash using `HExists`.
+
+```go
+func (ctx *HashKey[k, v]) HExists(field k) (bool, error)
+```
+
+#### Example
+
+```go
+exists, err := keyUser.HExists("1")
+if err == nil {
+    fmt.Println("Exists:", exists)
+}
+```
+
+## Advanced Operations
+
+### Retrieving All Fields and Values
+
+Get all fields and their corresponding values from the hash.
+
+```go
+func (ctx *HashKey[k, v]) HGetAll() (map[k]v, error)
+```
+
+#### Example
+
+```go
+users, err := keyUser.HGetAll()
+if err == nil {
+    for id, user := range users {
+        fmt.Println("ID:", id, "Name:", user.Name)
+    }
+}
+```
+
+### Getting All Hash Fields
+
+Retrieve all fields (keys) from the hash.
+
+```go
+func (ctx *HashKey[k, v]) HKeys() ([]k, error)
+```
+
+### Getting All Hash Values
+
+Retrieve all values from the hash.
+
+```go
+func (ctx *HashKey[k, v]) HVals() ([]v, error)
+```
+
+### Getting the Number of Fields
+
+Get the number of fields in the hash.
+
+```go
+func (ctx *HashKey[k, v]) HLen() (int64, error)
+```
+
+## Modifiers and Data Validation
+
+For information on how to use modifiers with `HashKey`, please refer to the [Modifier Example](doc_mod_example.md).
+
+## Example Usage
+
+### Defining a Struct with Modifiers
+
+```go
+type User struct {
+    ID   string `msgpack:"id" mod:"trim,lowercase"`
+    Name string `msgpack:"name" mod:"trim"`
+}
+```
+
+### Creating a HashKey Context
+
+```go
+keyUser := redisdb.NewHashKey[string, *User](redisdb.WithKey("users"))
+```
+
+### Setting and Getting a User
+
+```go
+user := &User{ID: "1", Name: "Alice"}
+keyUser.HSet("1", user)
+
+retrievedUser, err := keyUser.HGet("1")
+if err == nil {
+    fmt.Println("Retrieved User:", retrievedUser.Name)
+}
+```
+
+### Getting All Users
+
+```go
+users, err := keyUser.HGetAll()
+if err == nil {
+    for id, user := range users {
+        fmt.Println("ID:", id, "Name:", user.Name)
+    }
+}
+```
+
+## Error Handling
+
+Most methods in `HashKey` return errors that you should check to handle failures gracefully. For example:
+
+```go
+if err := keyUser.HSet("1", user); err != nil {
+    fmt.Println("Error setting user:", err)
+}
+```
+
+Always ensure to handle errors to maintain the robustness of your application.
+
+## Conclusion
+
+The `HashKey` type in the `redisdb` package provides a convenient and type-safe way to work with Redis hash keys in Go. By using generics, it allows you to specify the types of keys and values, reducing the chance of errors and making your code more maintainable. Explore the other methods and features provided by the package to fully leverage its capabilities.
+```
+
+#### Updated `doc_listKey.md`
+
+```markdown
+## ListKey Documentation
+
+`ListKey` is a type provided by the `redisdb` package to interact with Redis list keys in a type-safe manner. Redis lists are collections of strings that are ordered in a FIFO (First In, First Out) or LIFO (Last In, First Out) manner, depending on the operation used.
+
+In the `redisdb` package, `ListKey` is defined as a generic type that allows specifying the key and value types, making it easier to work with typed data without manual marshaling and unmarshaling.
+
+## Creating a ListKey Context
+
+To use `ListKey`, you first need to create a context that represents your list key in Redis. This is done using the `NewListKey` function, which takes optional setters to configure the context.
+
+```go
+func NewListKey[k comparable, v any](ops ...opSetter) *ListKey[k, v]
+```
+
+### Optional Parameters
+
+- `WithKey(key string)`: Allows specifying a custom key name for the list. If not provided, the key name is inferred from the type of `v`.
+
+- `WithRds(dataSource string)`: Specifies the Redis data source to use. By default, it uses "default".
+
+- `WithModifier(extraModifiers map[string]ModifierFunc)`: Registers additional modifiers for the fields of `v`.
+
+## Basic Operations
+
+### Pushing Elements
+
+To add elements to the list, use `RPush` to append elements to the end or `LPush` to push elements to the beginning.
+
+```go
+func (ctx *ListKey[k, v]) RPush(param ...v) error
+func (ctx *ListKey[k, v]) LPush(param ...v) error
+```
+
+#### Example
+
+```go
+item := &Item{ID: "1", Name: "Item1"}
+keyList.RPush(item)
+keyList.LPush(item)
+```
+
+### Popping Elements
+
+Remove and retrieve elements from the list using `RPop` or `LPop`.
+
+```go
+func (ctx *ListKey[k, v]) RPop() (ret v, err error)
+func (ctx *ListKey[k, v]) LPop() (ret v, err error)
+```
+
+#### Example
+
+```go
+poppedItem, err := keyList.RPop()
+if err == nil {
+    fmt.Println("Popped Item:", poppedItem.Name)
+}
+```
+
+## Advanced Operations
+
+### Retrieving Elements by Index
+
+Retrieve elements from the list between specified indices using `LRange`.
+
+```go
+func (ctx *ListKey[k, v]) LRange(start, stop int64) ([]v, error)
+```
+
+#### Example
+
+```go
+items, err := keyList.LRange(0, -1)
+if err == nil {
+    for _, item := range items {
+        fmt.Println("Item:", item.Name)
+    }
+}
+```
+
+### Removing Elements
+
+Remove specific elements from the list using `LRem`.
+
+```go
+func (ctx *ListKey[k, v]) LRem(count int64, param v) error
+```
+
+#### Example
+
+```go
+err := keyList.LRem(1, &Item{ID: "1", Name: "Item1"})
+if err == nil {
+    fmt.Println("Element removed successfully.")
+}
+```
+
+### Trimming the List
+
+Trim the list to retain only elements between specified indices using `LTrim`.
+
+```go
+func (ctx *ListKey[k, v]) LTrim(start, stop int64) error
+```
+
+#### Example
+
+```go
+err := keyList.LTrim(0, 9)
+if err == nil {
+    fmt.Println("List trimmed to 10 elements.")
+}
+```
+
+## Modifiers and Data Validation
+
+For information on how to use modifiers with `ListKey`, please refer to the [Modifier Example](doc_mod_example.md).
+
+## Example Usage
+
+### Defining a Struct with Modifiers
+
+```go
+type Item struct {
+    ID   string `msgpack:"id" mod:"trim,lowercase"`
+    Name string `msgpack:"name" mod:"trim"`
+}
+```
+
+### Creating a ListKey Context
+
+```go
+keyList := redisdb.NewListKey[string, *Item](redisdb.WithKey("items"))
+```
+
+### Pushing and Popping Items
+
+```go
+item := &Item{ID: "1", Name: "Item1"}
+keyList.RPush(item)
+
+poppedItem, err := keyList.RPop()
+if err == nil {
+    fmt.Println("Popped Item:", poppedItem.Name)
+}
+```
+
+### Retrieving All Items
+
+```go
+items, err := keyList.LRange(0, -1)
+if err == nil {
+    for _, item := range items {
+        fmt.Println("Item:", item.Name)
+    }
+}
+```
+
+## Error Handling
+
+Most methods in `ListKey` return errors that you should check to handle failures gracefully. For example:
+
+```go
+if err := keyList.RPush(item); err != nil {
+    fmt.Println("Error pushing item:", err)
+}
+```
+
+Always ensure to handle errors to maintain the robustness of your application.
+
+## Conclusion
+
+The `ListKey` type in the `redisdb` package provides a convenient and type-safe way to work with Redis list keys in Go. By using generics, it allows you to specify the types of keys and values, reducing the chance of errors and making your code more maintainable. Explore the other methods and features provided by the package to fully leverage its capabilities.
+```
+
+#### Updated `doc_setkey.md`
+
+```markdown
+## Introduction
+
+`SetKey` is a type provided by the `redisdb` package to interact with Redis set keys in a type-safe manner. Redis sets are collections of unique strings, ensuring no duplicates are stored. This makes them ideal for scenarios where uniqueness is crucial, such as storing tags, categories, or any distinct items.
+
+In the `redisdb` package, `SetKey` is defined as a generic type that allows specifying the value type, making it easier to work with typed data without manual marshaling and unmarshaling. It leverages the `msgpack` library for efficient serialization and deserialization of data.
+
+## Creating a SetKey Context
+
+To utilize `SetKey`, you need to create a context that represents your set key in Redis. This is done through the `NewSetKey` function, which accepts optional setters to configure the context.
+
+```go
+func NewSetKey[k comparable, v any](ops ...opSetter) *SetKey[k, v]
+```
+
+### Optional Parameters
+
+- `WithKey(key string)`: Allows specifying a custom key name for the set. If not provided, the key name is inferred from the type of `v`.
+
+- `WithRds(dataSource string)`: Specifies the Redis data source to use. By default, it uses "default".
+
+- `WithModifier(extraModifiers map[string]ModifierFunc)`: Registers additional modifiers for the members of `v`.
+
+## Basic Operations
+
+### Adding Members to the Set
+
+To add a member to the set, use the `SAdd` method.
+
+```go
+func (ctx *SetKey[k, v]) SAdd(param v) error
+```
+
+#### Example
+
+```go
+tag := &Tag{ID: "1", Name: "Technology"}
+keyTag.SAdd(tag)
+```
+
+### Getting the Number of Members
+
+Retrieve the number of members in the set using the `SCard` method.
+
+```go
+func (ctx *SetKey[k, v]) SCard() (int64, error)
+```
+
+#### Example
+
+```go
+count, err := keyTag.SCard()
+if err == nil {
+    fmt.Println("Number of tags:", count)
+}
+```
+
+### Removing Members from the Set
+
+Remove a specific member from the set using the `SRem` method.
+
+```go
+func (ctx *SetKey[k, v]) SRem(param v) error
+```
+
+#### Example
+
+```go
+tagToRemove := &Tag{ID: "1", Name: "Technology"}
+err := keyTag.SRem(tagToRemove)
+if err == nil {
+    fmt.Println("Tag removed successfully.")
+}
+```
+
+### Checking Member Existence
+
+Check if a member exists in the set using the `SIsMember` method.
+
+```go
+func (ctx *SetKey[k, v]) SIsMember(param v) (bool, error)
+```
+
+#### Example
+
+```go
+tag := &Tag{ID: "1", Name: "Technology"}
+exists, err := keyTag.SIsMember(tag)
+if err == nil {
+    fmt.Println("Exists:", exists)
+}
+```
+
+### Getting All Members
+
+Retrieve all members from the set using the `SMembers` method.
+
+```go
+func (ctx *SetKey[k, v]) SMembers() ([]v, error)
+```
+
+#### Example
+
+```go
+tags, err := keyTag.SMembers()
+if err == nil {
+    for _, tag := range tags {
+        fmt.Println("Tag ID:", tag.ID, "Name:", tag.Name)
+    }
+}
+```
+
+## Advanced Operations
+
+### Incrementally Iterating Through the Set
+
+Use the `SScan` method to incrementally iterate through the set, which is useful for large datasets.
+
+```go
+func (ctx *SetKey[k, v]) SScan(cursor uint64, match string, count int64) ([]v, uint64, error)
+```
+
+#### Example
+
+```go
+var cursor uint64 = 0
+var tags []v
+for {
+    _tags, newCursor, err := keyTag.SScan(cursor, "*", 10)
+    if err != nil {
+        break
+    }
+    tags = append(tags, _tags...)
+    if newCursor == 0 {
+        break
+    }
+    cursor = newCursor
+}
+```
+
+## Modifiers and Data Validation
+
+For information on how to use modifiers with `SetKey`, please refer to the [Modifier Example](doc_mod_example.md).
+
+## Example Usage
+
+### Defining a Struct with Modifiers
+
+```go
+type Tag struct {
+    ID   string `msgpack:"id" mod:"trim,lowercase"`
+    Name string `msgpack:"name" mod:"trim"`
+}
+```
+
+### Creating a SetKey Context
+
+```go
+keyTag := redisdb.NewSetKey[string, *Tag](redisdb.WithKey("tags"))
+```
+
+### Adding and Removing Tags
+
+```go
+tag := &Tag{ID: "1", Name: "Technology"}
+keyTag.SAdd(tag)
+
+tagToRemove := &Tag{ID: "1", Name: "Technology"}
+err := keyTag.SRem(tagToRemove)
+if err == nil {
+    fmt.Println("Tag removed successfully.")
+}
+```
+
+### Checking Tag Existence
+
+```go
+tag := &Tag{ID: "1", Name: "Technology"}
+exists, err := keyTag.SIsMember(tag)
+if err == nil {
+    fmt.Println("Exists:", exists)
+}
+```
+
+### Getting All Tags
+
+```go
+tags, err := keyTag.SMembers()
+if err == nil {
+    for _, tag := range tags {
+        fmt.Println("Tag ID:", tag.ID, "Name:", tag.Name)
+    }
+}
+```
+
+## Error Handling
+
+Most methods in `SetKey` return errors that you should check to handle failures gracefully. For example:
+
+```go
+if err := keyTag.SAdd(tag); err != nil {
+    fmt.Println("Error adding tag:", err)
+}
+```
+
+Always ensure to handle errors to maintain the robustness of your application.
+
+## Conclusion
+
+The `SetKey` type in the `redisdb` package provides a convenient and type-safe way to work with Redis set keys in Go. By using generics, it allows you to specify the types of values, reducing the chance of errors and making your code more maintainable. Explore the other methods and features provided by the package to fully leverage its capabilities.
+```
+
+#### Updated `doc_stringkey.md`
+
+```markdown
+---
+slug: data-stringkey
+title: StringKey
+type:  docs
+sidebar_position: 2
+---
+
+## StringKey Documentation
+
+`StringKey` is a type provided by the `redisdb` package to interact with Redis string keys in a type-safe manner. Redis strings are the simplest data type in Redis, used to store single string values. They can be used for a variety of purposes, such as caching, storing configuration settings, or any scenario where a single piece of data needs to be stored and retrieved efficiently.
+
+In the `redisdb` package, `StringKey` is defined as a generic type that allows specifying the key and value types, making it easier to work with typed data without manual marshaling and unmarshaling.
+
+## Creating a StringKey Context
+
+To use `StringKey`, you first need to create a context that represents your string key in Redis. This is done using the `NewStringKey` function, which takes optional setters to configure the context.
+
+```go
+func NewStringKey[k comparable, v any](ops ...opSetter) *StringKey[k, v]
+```
+
+### Optional Parameters
+
+- `WithKey(key string)`: Allows specifying a custom key name for the string. If not provided, the key name is inferred from the type of `v`.
+
+- `WithRds(dataSource string)`: Specifies the Redis data source to use. By default, it uses "default".
+
+- `WithModifier(extraModifiers map[string]ModifierFunc)`: Registers additional modifiers for the fields of `v`.
+
+## Basic Operations
+
+### Setting a String Value
+
+To set a string value in Redis, use the `Set` method. This method requires a key and a value, along with an optional expiration time.
+
+```go
+func (ctx *StringKey[k, v]) Set(key k, value v, expiration time.Duration) error
+```
+
+### Getting a String Value
+
+Retrieve a string value from Redis using the `Get` method.
+
+```go
+func (ctx *StringKey[k, v]) Get(field k) (value v, err error)
+```
+
+### Deleting a String Value
+
+Delete a specific string value from Redis using the `Del` method.
+
+```go
+func (ctx *StringKey[k, v]) Del(key k) error
+```
+
+### Example Usage
+
+#### Setting and Getting a Configuration
+
+```go
+config := &Config{Host: "example.com", Port: 8080, Enabled: true}
+keyConfig.Set("config1", config, time.Hour*24)
+
+retrievedConfig, err := keyConfig.Get("config1")
+if err == nil {
+    fmt.Println("Retrieved Config:", retrievedConfig.Host, retrievedConfig.Port, retrievedConfig.Enabled)
+}
+```
+
+## Advanced Operations
+
+### Retrieving All Keys and Values
+
+Get all keys that match a specific pattern and retrieve their corresponding values.
+
+```go
+func (ctx *StringKey[k, v]) GetAll(match string) (mapOut map[k]v, err error)
+```
+
+### Setting Multiple Keys at Once
+
+Set multiple key-value pairs to Redis strings in a single operation.
+
+```go
+func (ctx *StringKey[k, v]) SetAll(_map map[k]v) error
+```
+
+### Example Usage
+
+#### Getting All Configurations
+
+```go
+configs, err := keyConfig.GetAll("configs:*")
+if err == nil {
+    for key, config := range configs {
+        fmt.Println("Key:", key, "Config:", config.Host, config.Port, config.Enabled)
+    }
+}
+```
+
+## Modifiers and Data Validation
+
+For information on how to use modifiers with `StringKey`, please refer to the [Modifier Example](doc_mod_example.md).
+
+## Example Usage
+
+### Defining a Struct with Modifiers
+
+```go
+type Config struct {
+    Host     string `msgpack:"host" mod:"trim,lowercase"`
+    Port     int    `msgpack:"port" mod:"default=8080"`
+    Enabled  bool   `msgpack:"enabled" mod:"default=true"`
+}
+```
+
+### Creating a StringKey Context
+
+```go
+keyConfig := redisdb.NewStringKey[string, *Config](redisdb.WithKey("configs"))
+```
+
+### Setting and Getting Configurations
+
+```go
+config := &Config{Host: "example.com", Port: 8080, Enabled: true}
+keyConfig.Set("config1", config, time.Hour*24)
+
+retrievedConfig, err := keyConfig.Get("config1")
+if err == nil {
+    fmt.Println("Retrieved Config:", retrievedConfig.Host, retrievedConfig.Port, retrievedConfig.Enabled)
+}
+```
+
+### Getting All Configurations
+
+```go
+configs, err := keyConfig.GetAll("configs:*")
+if err == nil {
+    for key, config := range configs {
+        fmt.Println("Key:", key, "Config:", config.Host, config.Port, config.Enabled)
+    }
+}
+```
+
+## Error Handling
+
+Most methods in `StringKey` return errors that you should check to handle failures gracefully. For example:
+
+```go
+if err := keyConfig.Set("config1", config, time.Hour*24); err != nil {
+    fmt.Println("Error setting config:", err)
+}
+```
+
+Always ensure to handle errors to maintain the robustness of your application.
+
+## Conclusion
+
+The `StringKey` type in the `redisdb` package provides a convenient and type-safe way to work with Redis string keys in Go. By using generics, it allows you to specify the types of keys and values, reducing the chance of errors and making your code more maintainable. Explore the other methods and features provided by the package to fully leverage its capabilities.
+```
+
+#### Updated `doc_zsetkey.md`
+
+```markdown
+## Introduction
+
+`ZSetKey` is a type provided by the `redisdb` package to interact with Redis sorted sets (zsets) in a type-safe manner. Redis sorted sets are collections of unique strings, each associated with a floating-point value that determines its sorting order. They are ideal for scenarios where you need to maintain a sorted list of items.
+
+In the `redisdb` package, `ZSetKey` is defined as a generic type that allows specifying the value type, making it easier to work with typed data without manual marshaling and unmarshaling. It uses the `msgpack` library for efficient serialization and deserialization of data.
+
+## Creating a ZSetKey Context
+
+To use `ZSetKey`, you need to create a context that represents your sorted set key in Redis. This is done using the `NewZSetKey` function, which accepts optional setters to configure the context.
+
+```go
+func NewZSetKey[k comparable, v any](ops ...opSetter) *ZSetKey[k, v]
+```
+
+### Optional Parameters
+
+- `WithKey(key string)`: Allows specifying a custom key name for the sorted set. If not provided, the key name is inferred from the type of `v`.
+
+- `WithRds(dataSource string)`: Specifies the Redis data source to use. By default, it uses "default".
+
+- `WithModifier(extraModifiers map[string]ModifierFunc)`: Registers additional modifiers for the fields of `v`.
+
+## Basic Operations
+
+### Adding Members with Scores
+
+To add members to the sorted set, use the `ZAdd` method. This method requires `redis.Z` structures, which contain the member and its score.
+
+```go
+func (ctx *ZSetKey[k, v]) ZAdd(members ...redis.Z) error
+```
+
+#### Example
+
+```go
+item := &ScoredItem{ID: "1", Score: 3.5}
+keyScoredItem.ZAdd(redis.Z{Member: item, Score: item.Score})
+```
+
+### Removing Members
+
+Remove specific members from the sorted set using the `ZRem` method.
+
+```go
+func (ctx *ZSetKey[k, v]) ZRem(members ...interface{}) error
+```
+
+#### Example
+
+```go
+itemToRemove := &ScoredItem{ID: "1", Score: 3.5}
+err := keyScoredItem.ZRem(itemToRemove)
+if err == nil {
+    fmt.Println("Item removed successfully.")
+}
+```
+
+### Getting the Number of Members
+
+Retrieve the number of members in the sorted set using the `ZCard` method.
+
+```go
+func (ctx *ZSetKey[k, v]) ZCard() (int64, error)
+```
+
+### Getting Members by Score Range
+
+Retrieve members within a specific score range using the `ZRangeByScore` method.
+
+```go
+func (ctx *ZSetKey[k, v]) ZRangeByScore(opt *redis.ZRangeBy) ([]v, error)
+```
+
+## Advanced Operations
+
+### Incrementing Member Scores
+
+Increment the score of a member by a given amount using the `ZIncrBy` method.
+
+```go
+func (ctx *ZSetKey[k, v]) ZIncrBy(increment float64, member v) error
+```
+
+### Getting Members with Scores
+
+Retrieve members along with their scores using the `ZRangeWithScores` or `ZRevRangeWithScores` methods.
+
+```go
+func (ctx *ZSetKey[k, v]) ZRangeWithScores(start, stop int64) ([]v, []float64, error)
+func (ctx *ZSetKey[k, v]) ZRevRangeWithScores(start, stop int64) ([]v, []float64, error)
+```
+
+### Getting Member Ranks
+
+Get the rank of a member in the sorted set using the `ZRank` or `ZRevRank` methods.
+
+```go
+func (ctx *ZSetKey[k, v]) ZRank(member interface{}) (int64, error)
+func (ctx *ZSetKey[k, v]) ZRevRank(member interface{}) (int64, error)
+```
+
+### Deleting Members by Rank Range
+
+Remove members from the sorted set based on their rank range.
+
+```go
+func (ctx *ZSetKey[k, v]) ZRemRangeByRank(start, stop int64) error
+```
+
+## Modifiers and Data Validation
+
+For information on how to use modifiers with `ZSetKey`, please refer to the [Modifier Example](doc_mod_example.md).
+
+## Example Usage
+
+### Defining a Struct with Modifiers
+
+```go
+type ScoredItem struct {
+    ID   string  `msgpack:"id" mod:"trim,lowercase"`
+    Score float64 `msgpack:"score" mod:"force"`
+}
+```
+
+### Creating a ZSetKey Context
+
+```go
+keyScoredItem := redisdb.NewZSetKey[string, *ScoredItem](redisdb.WithKey("scored_items"))
+```
+
+### Adding and Removing Items
+
+```go
+item := &ScoredItem{ID: "1", Score: 3.5}
+keyScoredItem.ZAdd(redis.Z{Member: item, Score: item.Score})
+
+itemToRemove := &ScoredItem{ID: "1", Score: 3.5}
+err := keyScoredItem.ZRem(itemToRemove)
+if err == nil {
+    fmt.Println("Item removed successfully.")
+}
+```
+
+### Getting Item Ranks
+
+```go
+item := &ScoredItem{ID: "1", Score: 3.5}
+rank, err := keyScoredItem.ZRank(item)
+if err == nil {
+    fmt.Println("Rank:", rank)
+}
+```
+
+### Retrieving All Items
+
+```go
+items, err := keyScoredItem.ZRange(0, -1)
+if err == nil {
+    for _, item := range items {
+        fmt.Println("Item ID:", item.ID, "Score:", item.Score)
+    }
+}
+```
+
+## Error Handling
+
+Most methods in `ZSetKey` return errors that you should check to handle failures gracefully. For example:
+
+```go
+if err := keyScoredItem.ZAdd(redis.Z{Member: item, Score: item.Score}); err != nil {
+    fmt.Println("Error adding item:", err)
+}
+```
+
+Always ensure to handle errors to maintain the robustness of your application.
+
+## Conclusion
+
+The `ZSetKey` type in the `redisdb` package provides a convenient and type-safe way to work with Redis sorted sets in Go. By using generics, it allows you to specify the types of values, reducing the chance of errors and making your code more maintainable. Explore the other methods and features provided by the package to fully leverage its capabilities.
+```
+
+#### Updated `doc_mod_example.md`
+
+```markdown
+## Modifier Example
+
+Modifiers are functions that can be applied to the fields of your struct during serialization and deserialization. They are particularly useful for tasks like trimming spaces, converting to lowercase, setting default values, etc. The modifiers are defined using struct tags.
+
+### Example Usage
+
+```golang
+
+type ExampleStruct struct {
+    Name     string    `mod:"trim,lowercase"`                      // Trims spaces and converts to lowercase
+    Age      int       `mod:"default=18"`                          // Sets default value to 18 if empty
+    UnixTime int64     `mod:"unixtime=ms,force"`                   // Sets Unix time in milliseconds (forced)
+    Counter  int64     `mod:"counter,force"`                       // Increments counter (forced)
+    Email    string    `mod:"lowercase,trim"`                      // Trims spaces and converts to lowercase
+}
+
+// Example of how to use modifiers in your code
+func ApplyModifiersToStruct() {
+    example := ExampleStruct{
+        Name:     "  John Doe  ",
+        Age:      0,
+        UnixTime: 0,
+        Counter:  0,
+        Email:    "  john.doe@domain.com  ",
+        Created:  time.Now(),
+    }
+
+    // Apply modifiers
+    if err := redisdb.ApplyModifiers(&example); err == nil {
+        // Log or print the modified struct
+        fmt.Println(example)
+    }
+}
+```
+
+### Available Modifiers
+
+- **trim:** Trims leading and trailing white spaces from the string.
+- **lowercase:** Converts the string to lowercase.
+- **uppercase:** Converts the string to uppercase.
+- **title:** Converts the string to title case.
+- **default:** Sets a default value if the field is empty.
+- **unixtime:** Sets the field to the current Unix timestamp in seconds or milliseconds.
+- **counter:** Increments an integer field by 1.
+- **nanoid:** Generates a unique identifier using the nanoid library.
+
+### Custom Modifiers
+
+You can also register custom modifiers by providing a map of modifier names to modifier functions when creating the context.
+
+```go
+extraModifiers := map[string]ModifierFunc{
+    "custom": func(fieldValue interface{}, tagParam string) (interface{}, error) {
+        // Custom modification logic
+    },
+}
+keyConfig := redisdb.NewStringKey[string, *Config](redisdb.WithModifier(extraModifiers))
+```
+
+### Applying Modifiers
+
+Modifiers are applied when you call `redisdb.ApplyModifiers(&yourStruct)`. This function will iterate through the struct's fields and apply any modifiers defined in the struct tags.
+
+## Conclusion
+
+Modifiers in RedisDB provide a powerful way to automate common data validation and transformation tasks directly within your structs. By leveraging modifiers, you can ensure data consistency and reduce the amount of boilerplate code in your applications. For more detailed information on how to use modifiers with specific data types, refer to the individual data type documentation.
+```
+
+### Explanation
+
+- **Removed Modifier Tutorials:** Each data type documentation file now has references to the central `doc_mod_example.md` for information on modifiers, rather than including their own tutorials.
+- **Added References:** A note or link is added in each data type documentation file directing users to `doc_mod_example.md` for detailed information on modifiers.
+- **Maintained Focus:** Each documentation file remains focused on its specific data type, making it easier for users to find relevant information without unnecessary repetition.
+
+This approach ensures that the documentation is clean, modular, and efficient, providing users with a clear path to understanding both the specific data types and the general modifiers functionality.
+
+
