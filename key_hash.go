@@ -43,7 +43,7 @@ func (ctx *HashKey[k, v]) getPrimaryKeyFieldIndex() {
 	}
 
 	for i, fieldN := 0, _type.NumField(); i < fieldN; i++ {
-		_, ok := reflect.ValueOf(val).Field(ctx.PrimaryKeyFieldIndex).Interface().(k)
+		_, ok := reflect.ValueOf(val).Field(i).Interface().(k)
 		if ok {
 			ctx.PrimaryKeyFieldIndex = i
 		}
