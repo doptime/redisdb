@@ -29,10 +29,20 @@ func NewHashKey[k comparable, v any](ops ...opSetter) *HashKey[k, v] {
 	return ctx
 }
 func (ctx *HashKey[k, v]) getPrimaryKeyFieldIndex() {
+	ctx.PrimaryKeyFieldIndex = -1
+
 	//get first field of v , which type is k
 	var val v
-	var fieldN = reflect.TypeOf(val).NumField()
-	for i := 0; i < fieldN; i++ {
+	//get default ServiceName
+	var _type reflect.Type
+	//take name of type v as key
+	for _type = reflect.TypeOf(val); _type.Kind() == reflect.Ptr || _type.Kind() == reflect.Array; _type = _type.Elem() {
+	}
+	if _type.Kind() != reflect.Struct {
+		return
+	}
+
+	for i, fieldN := 0, _type.NumField(); i < fieldN; i++ {
 		_, ok := reflect.ValueOf(val).Field(ctx.PrimaryKeyFieldIndex).Interface().(k)
 		if ok {
 			ctx.PrimaryKeyFieldIndex = i
