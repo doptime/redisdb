@@ -34,16 +34,17 @@ func (ctx *HashKey[k, v]) getPrimaryKeyFieldIndex() {
 	//get first field of v , which type is k
 	var val v
 	//get default ServiceName
-	var _type reflect.Type
+	var typ reflect.Type
 	//take name of type v as key
-	for _type = reflect.TypeOf(val); _type.Kind() == reflect.Ptr || _type.Kind() == reflect.Array; _type = _type.Elem() {
+	for typ = reflect.TypeOf(val); typ.Kind() == reflect.Ptr || typ.Kind() == reflect.Array; typ = typ.Elem() {
 	}
-	if _type.Kind() != reflect.Struct {
+	if typ.Kind() != reflect.Struct {
 		return
 	}
 
-	for i, fieldN := 0, _type.NumField(); i < fieldN; i++ {
-		_, ok := reflect.ValueOf(val).Field(i).Interface().(k)
+	inst := reflect.New(typ).Elem()
+	for i := 0; i < typ.NumField(); i++ {
+		_, ok := inst.Field(i).Interface().(k)
 		if ok {
 			ctx.PrimaryKeyFieldIndex = i
 		}
