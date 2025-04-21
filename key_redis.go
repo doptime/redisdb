@@ -99,7 +99,7 @@ func (ctx *RedisKey[k, v]) applyOption(opt *Option) (err error) {
 		return fmt.Errorf("rds item unconfigured: " + ctx.RdsName)
 	}
 	ctx.Context = context.Background()
-	ctx.SerializeKey = ctx.getSerializeFun(reflect.TypeOf((*v)(nil)).Elem().Kind())
+	ctx.SerializeKey = ctx.getSerializeFun(reflect.TypeOf((*k)(nil)).Elem().Kind())
 	ctx.SerializeValue = ctx.getSerializeFun(reflect.TypeOf((*v)(nil)).Elem().Kind())
 	ctx.DeserializeValue = ctx.getDeserializetoValueFunc()
 	ctx.DeserializeValues = ctx.toValuesFunc()
