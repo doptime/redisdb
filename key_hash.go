@@ -24,8 +24,6 @@ func NewHashKey[k comparable, v any](ops ...opSetter) *HashKey[k, v] {
 		return nil
 	}
 	ctx.getPrimaryKeyFieldIndex()
-	//add to hashKeyMap
-	hKeyMap.Set(ctx.Key+":"+ctx.RdsName, ctx)
 	return ctx
 }
 func (ctx *HashKey[k, v]) getPrimaryKeyFieldIndex() {
