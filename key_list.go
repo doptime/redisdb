@@ -194,18 +194,6 @@ func (ctx *ListKey[v]) LTrim(start, stop int64) error {
 	return ctx.Rds.LTrim(ctx.Context, ctx.Key, start, stop).Err()
 }
 
-func (ctx *ListKey[v]) LIndex(index int64) (ret v, err error) {
-	cmd := ctx.Rds.LIndex(ctx.Context, ctx.Key, index)
-	if err := cmd.Err(); err != nil {
-		return ret, err
-	}
-	data, err := cmd.Bytes()
-	if err != nil {
-		return ret, err
-	}
-	return ctx.DeserializeValue(data)
-}
-
 func (ctx *ListKey[v]) LLen() (int64, error) {
 	return ctx.Rds.LLen(ctx.Context, ctx.Key).Result()
 }
