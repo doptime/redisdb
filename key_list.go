@@ -103,6 +103,17 @@ func (ctx *ListKey[v]) LSet(index int64, param v) error {
 	}
 	return ctx.Rds.LSet(ctx.Context, ctx.Key, index, val).Err()
 }
+func (ctx *ListKey[v]) LIndex(ind int64) (ret v, err error) {
+	cmd := ctx.Rds.LIndex(ctx.Context, ctx.Key, ind)
+	if err = cmd.Err(); err != nil {
+		return ret, err
+	}
+	data, err := cmd.Bytes()
+	if err != nil {
+		return ret, err
+	}
+	return ctx.DeserializeValue(data)
+}
 
 func (ctx *ListKey[v]) BLPop(timeout time.Duration) (ret v, err error) {
 	cmd := ctx.Rds.BLPop(ctx.Context, timeout, ctx.Key)
