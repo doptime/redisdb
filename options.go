@@ -3,39 +3,50 @@ package redisdb
 
 // Option is parameter to create an API, RPC, or CallAt
 type Option struct {
-	Key        string
+	RedisKey   string
 	DataSource string
-	AsWebData  bool
+	HttpAccess bool
 	Modifiers  map[string]ModifierFunc
 }
-type opSetter func(*Option)
 
-func WithKey(key string) opSetter {
-	return func(o *Option) {
-		o.Key = key
+var Opt = Option{
+	RedisKey:   "default",
+	DataSource: "",
+	HttpAccess: false,
+	Modifiers:  map[string]ModifierFunc{},
+}
+
+func (i Option) cp(o *Option) {
+	o.RedisKey = i.RedisKey
+	o.DataSource = i.DataSource
+	o.HttpAccess = i.HttpAccess
+	o.Modifiers = map[string]ModifierFunc{}
+	for k, v := range i.Modifiers {
+		o.Modifiers[k] = v
 	}
 }
 
-func WithRds(dataSource string) opSetter {
-	return func(o *Option) {
-		o.DataSource = dataSource
-	}
+func (i Option) Key(key string) (o Option) {
+	i.cp(&o)
+	o.RedisKey = key
+	return
 }
 
-func WithAsWebData() opSetter {
-	return func(o *Option) {
-		o.AsWebData = true
-	}
-}
-func WithModifier(extraModifiers map[string]ModifierFunc) opSetter {
-	return func(o *Option) {
-		o.Modifiers = extraModifiers
-	}
+func (i Option) Rds(dataSource string) (o Option) {
+	i.cp(&o)
+	o.DataSource = dataSource
+	return
 }
 
-func (opt Option) buildOptions(options ...opSetter) *Option {
-	for _, option := range options {
-		option(&opt)
+func (i Option) HttpVisit() (o Option) {
+	i.cp(&o)
+	o.HttpAccess = true
+	return
+}
+func (i Option) Modifier(extraModifiers map[string]ModifierFunc) (o Option) {
+	i.cp(&o)
+	for k, v := range extraModifiers {
+		o.Modifiers[k] = v
 	}
-	return &opt
+	return
 }

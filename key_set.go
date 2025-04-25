@@ -6,11 +6,11 @@ type SetKey[k comparable, v any] struct {
 	RedisKey[k, v]
 }
 
-func NewSetKey[k comparable, v any](ops ...opSetter) *SetKey[k, v] {
+func NewSetKey[k comparable, v any](ops ...Option) *SetKey[k, v] {
 	ctx := &SetKey[k, v]{}
 	ctx.KeyType = "set"
-	Opt := Option{}.buildOptions(ops...)
-	if err := ctx.applyOption(Opt); err != nil {
+	op := append(ops, Opt)[0]
+	if err := ctx.applyOption(op); err != nil {
 		logger.Error().Err(err).Msg("data.New failed")
 		return nil
 	}

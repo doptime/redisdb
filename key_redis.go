@@ -40,9 +40,9 @@ func (ctx *RedisKey[k, v]) Duplicate(newKey, RdsSourceName string) (newCtx Redis
 		ctx.SerializeKey, ctx.SerializeValue, ctx.DeserializeValue, ctx.DeserializeValues, ctx.UseModer, ctx.PrimaryKeyFieldIndex}
 }
 
-func NewRedisKey[k comparable, v any](ops ...opSetter) *RedisKey[k, v] {
+func NewRedisKey[k comparable, v any](ops ...Option) *RedisKey[k, v] {
 	ctx := &RedisKey[k, v]{Key: "nonkey", KeyType: "nonkey"}
-	op := Option{}.buildOptions(ops...)
+	op := append(ops, Opt)[0]
 	if err := ctx.applyOption(op); err != nil {
 		logger.Error().Err(err).Msg("data.New failed")
 		return nil
@@ -79,9 +79,9 @@ func (ctx *RedisKey[k, v]) Scan(cursorOld uint64, match string, count int64) (ke
 	}
 	return keys, cursorNew, nil
 }
-func (ctx *RedisKey[k, v]) applyOption(opt *Option) (err error) {
-	if len(opt.Key) > 0 {
-		ctx.Key = opt.Key
+func (ctx *RedisKey[k, v]) applyOption(opt Option) (err error) {
+	if len(opt.RedisKey) > 0 {
+		ctx.Key = opt.RedisKey
 	}
 	if len(opt.DataSource) > 0 {
 		ctx.RdsName = opt.DataSource
@@ -106,7 +106,7 @@ func (ctx *RedisKey[k, v]) applyOption(opt *Option) (err error) {
 	ctx.UseModer = RegisterStructModifiers(opt.Modifiers, reflect.TypeOf((*v)(nil)).Elem())
 
 	// don't register web data if it fully prepared
-	if opt.AsWebData && ctx.Key != "" {
+	if opt.HttpAccess && ctx.Key != "" {
 		ctx.RegisterWebData()
 	}
 	return nil

@@ -15,10 +15,10 @@ type HashKey[k comparable, v any] struct {
 }
 
 // NewHashKey creates a new HashKey with the given options.
-func NewHashKey[k comparable, v any](ops ...opSetter) *HashKey[k, v] {
+func NewHashKey[k comparable, v any](ops ...Option) *HashKey[k, v] {
 	ctx := &HashKey[k, v]{}
 	ctx.KeyType = "hash"
-	op := Option{DataSource: "default"}.buildOptions(ops...)
+	op := append(ops, Opt)[0]
 	if err := ctx.applyOption(op); err != nil {
 		logger.Error().Err(err).Msg("data.New failed")
 		return nil

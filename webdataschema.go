@@ -13,7 +13,7 @@ import (
 var WebDataDocsMap cmap.ConcurrentMap[string, *WebDataDocs] = cmap.New[*WebDataDocs]()
 
 var SynWebDataRunOnce = sync.Mutex{}
-var KeyWebDataDocs = NewHashKey[string, *WebDataDocs](WithKey("Docs:Data"))
+var KeyWebDataDocs = NewHashKey[string, *WebDataDocs](Opt.Key("Docs:Data"))
 
 // func initializeFields(value reflect.Value) (ret interface{}) {
 // 	switch value.Kind() {

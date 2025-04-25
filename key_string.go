@@ -11,10 +11,10 @@ type StringKey[k comparable, v any] struct {
 	RedisKey[k, v]
 }
 
-func NewStringKey[k comparable, v any](ops ...opSetter) *StringKey[k, v] {
+func NewStringKey[k comparable, v any](ops ...Option) *StringKey[k, v] {
 	ctx := &StringKey[k, v]{}
 	ctx.KeyType = "string"
-	op := Option{}.buildOptions(ops...)
+	op := append(ops, Opt)[0]
 	if err := ctx.applyOption(op); err != nil {
 		logger.Error().Err(err).Msg("data.New failed")
 		return nil
