@@ -10,7 +10,7 @@ type Option struct {
 }
 
 var Opt = Option{
-	RedisKey:   "default",
+	RedisKey:   "",
 	DataSource: "",
 	HttpAccess: false,
 	Modifiers:  map[string]ModifierFunc{},
