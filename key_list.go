@@ -8,7 +8,7 @@ import (
 )
 
 type ListKey[v any] struct {
-	RedisKey[int64, v]
+	RedisKey[string, v]
 }
 
 func NewListKey[v any](ops ...Option) *ListKey[v] {

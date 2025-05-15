@@ -61,6 +61,14 @@ func StringCtxWitchValueSchemaChecked(key string, RedisDataSource string, msgpac
 	}
 	return &StringKey[string, interface{}]{*ctx}, value, nil
 }
+func ListCtxWitchValueSchemaChecked(key string, RedisDataSource string, msgpackData []byte) (db *ListKey[interface{}], value interface{}, err error) {
+	var ctx *RedisKey[string, interface{}]
+	ctx, value, err = CtxWithValueSchemaChecked(key, "list", RedisDataSource, msgpackData)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &ListKey[interface{}]{*ctx}, value, nil
+}
 
 func (ctx *RedisKey[k, v]) ValidDataKey() error {
 	if disallowed, found := DisAllowedDataKeyNames[ctx.Key]; found && disallowed {
