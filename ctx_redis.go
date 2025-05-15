@@ -9,6 +9,7 @@ import (
 	"github.com/doptime/config/cfgredis"
 	"github.com/doptime/logger"
 	"github.com/redis/go-redis/v9"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 type RedisKey[k comparable, v any] struct {
@@ -23,6 +24,8 @@ type RedisKey[k comparable, v any] struct {
 	SerializeValue       func(value interface{}) (msgpack string, err error)
 	DeserializeValue     func(msgpack []byte) (value v, err error)
 	DeserializeValues    func(msgpacks []string) (values []v, err error)
+	autoFiller           func(in v) error
+	validator            func(in v) error
 	UseModer             bool
 	PrimaryKeyFieldIndex int
 }
@@ -37,7 +40,8 @@ func (ctx *RedisKey[k, v]) V(value v) (ret v) {
 
 func (ctx *RedisKey[k, v]) Duplicate(newKey, RdsSourceName string) (newCtx RedisKey[k, v]) {
 	return RedisKey[k, v]{ctx.Context, RdsSourceName, ctx.Rds, newKey, ctx.KeyType,
-		ctx.SerializeKey, ctx.SerializeValue, ctx.DeserializeValue, ctx.DeserializeValues, ctx.UseModer, ctx.PrimaryKeyFieldIndex}
+		ctx.SerializeKey, ctx.SerializeValue, ctx.DeserializeValue, ctx.DeserializeValues, ctx.autoFiller, ctx.validator,
+		ctx.UseModer, ctx.PrimaryKeyFieldIndex}
 }
 
 func NewRedisKey[k comparable, v any](ops ...Option) *RedisKey[k, v] {
@@ -47,6 +51,8 @@ func NewRedisKey[k comparable, v any](ops ...Option) *RedisKey[k, v] {
 		logger.Error().Err(err).Msg("data.New failed")
 		return nil
 	}
+	ctx.autoFiller = ctx.NewAutoFiller()
+	ctx.validator = ctx.NewValidator()
 	return ctx
 }
 func (ctx *RedisKey[k, v]) Time() (tm time.Time, err error) {
@@ -155,8 +161,24 @@ func (ctx *RedisKey[k, v]) toKeyValueStrs(keyValue ...interface{}) (keyValStrs [
 	}
 	return keyValStrs, nil
 }
-func (ctx *RedisKey[k, v]) MsgpackUnmarshalValue(msgpack []byte) (rets interface{}, err error) {
-	return nil, nil
+func (ctx *RedisKey[k, v]) UnmarshalValue(msgpackBytes []byte) (rets interface{}, err error) {
+
+	if len(msgpackBytes) == 0 {
+		return nil, fmt.Errorf("msgpackBytes is empty")
+	}
+
+	var vInstance v
+	if err = msgpack.Unmarshal(msgpackBytes, &vInstance); err != nil {
+		return nil, err
+	}
+
+	// auto fill field UpdateAt and CreateAt
+	err = ctx.AutoFill(vInstance)
+	if err == nil {
+		err = ctx.Validate(vInstance)
+	}
+
+	return vInstance, err
 }
 
 func (ctx *RedisKey[k, v]) MsgpackUnmarshalKeyValues(msgpack []byte) (rets interface{}, err error) {
