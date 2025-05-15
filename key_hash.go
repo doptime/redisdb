@@ -26,25 +26,26 @@ func NewHashKey[k comparable, v any](ops ...Option) *HashKey[k, v] {
 	ctx.getPrimaryKeyFieldIndex()
 	return ctx
 }
-func (ctx *HashKey[k, v]) getPrimaryKeyFieldIndex() {
+func (ctx *HashKey[K, V]) getPrimaryKeyFieldIndex() {
 	ctx.PrimaryKeyFieldIndex = -1
 
-	//get first field of v , which type is k
-	var val v
-	//get default ServiceName
-	var typ reflect.Type
-	//take name of type v as key
-	for typ = reflect.TypeOf(val); typ.Kind() == reflect.Ptr || typ.Kind() == reflect.Array; typ = typ.Elem() {
+	typ := reflect.TypeOf(*new(V))
+
+	// 解除多级指针/数组/切片包装
+	for typ.Kind() == reflect.Ptr || typ.Kind() == reflect.Slice || typ.Kind() == reflect.Array {
+		typ = typ.Elem()
 	}
+
 	if typ.Kind() != reflect.Struct {
 		return
 	}
 
-	inst := reflect.New(typ).Elem()
+	// 遍历字段查找匹配 K 类型的字段
 	for i := 0; i < typ.NumField(); i++ {
-		_, ok := inst.Field(i).Interface().(k)
-		if ok {
+		field := typ.Field(i)
+		if field.Type.AssignableTo(reflect.TypeOf(*new(K))) {
 			ctx.PrimaryKeyFieldIndex = i
+			return
 		}
 	}
 }
