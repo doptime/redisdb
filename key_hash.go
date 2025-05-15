@@ -29,21 +29,34 @@ func NewHashKey[k comparable, v any](ops ...Option) *HashKey[k, v] {
 func (ctx *HashKey[K, V]) getPrimaryKeyFieldIndex() {
 	ctx.PrimaryKeyFieldIndex = -1
 
-	typ := reflect.TypeOf(*new(V))
-
-	// 解除多级指针/数组/切片包装
-	for typ.Kind() == reflect.Ptr || typ.Kind() == reflect.Slice || typ.Kind() == reflect.Array {
-		typ = typ.Elem()
+	// 获取 V 的反射类型
+	vType := reflect.TypeOf(new(V))
+	if vType.Kind() == reflect.Ptr {
+		// 如果 V 是指针类型，取其元素类型
+		vType = vType.Elem()
 	}
 
-	if typ.Kind() != reflect.Struct {
+	// 解除多级指针/数组/切片包装
+	for vType.Kind() == reflect.Ptr || vType.Kind() == reflect.Slice || vType.Kind() == reflect.Array {
+		vType = vType.Elem()
+	}
+
+	// 确保 V 是结构体类型
+	if vType.Kind() != reflect.Struct {
 		return
 	}
 
+	// 获取 K 的反射类型
+	kType := reflect.TypeOf(new(K))
+	if kType.Kind() == reflect.Ptr {
+		// 如果 K 是指针类型，取其元素类型
+		kType = kType.Elem()
+	}
+
 	// 遍历字段查找匹配 K 类型的字段
-	for i := 0; i < typ.NumField(); i++ {
-		field := typ.Field(i)
-		if field.Type.AssignableTo(reflect.TypeOf(*new(K))) {
+	for i := 0; i < vType.NumField(); i++ {
+		field := vType.Field(i)
+		if field.Type.AssignableTo(kType) {
 			ctx.PrimaryKeyFieldIndex = i
 			return
 		}
