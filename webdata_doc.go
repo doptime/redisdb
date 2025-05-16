@@ -10,7 +10,8 @@ import (
 )
 
 type WebDataSchema struct {
-	KeyName string
+	KeyName       string
+	ValueTypeName string
 	// string, hash, list, set, zset, stream
 	KeyType     string
 	UpdateAt    int64
@@ -25,7 +26,21 @@ var KeyWebDataSchema = NewHashKey[string, *WebDataSchema](Opt.Key("Docs:WebDataS
 
 var WebDataSchemaMap = cmap.New[*WebDataSchema]()
 
+func valueTypeName(value interface{}) (Key string, err error) {
+	//get default ServiceName
+	var _type reflect.Type
+	//take name of type v as key
+	for _type = reflect.TypeOf(value); _type.Kind() == reflect.Ptr || _type.Kind() == reflect.Array; _type = _type.Elem() {
+	}
+	Key = _type.Name()
+	if _, ok := DisAllowedDataKeyNames[Key]; ok {
+		err = fmt.Errorf("invalid keyname infered from type: " + Key)
+		return "", err
+	}
+	return Key, nil
+}
 func (ctx *RedisKey[k, v]) RegisterWebData() {
+
 	var validRdsKeyTypes = map[string]bool{"string": true, "list": true, "set": true, "hash": true, "zset": true, "stream": true}
 	if _, ok := validRdsKeyTypes[ctx.KeyType]; !ok {
 		return
@@ -43,8 +58,13 @@ func (ctx *RedisKey[k, v]) RegisterWebData() {
 	obj := initializeType(vType).Interface()
 	jsdoc, _ := GenerateAllJSDocTypeDefs(_v)
 	typescriptInterface, _ := GoTypeToTypeScriptInterface(_v)
+	ValueTypeName, _ := valueTypeName((*v)(nil))
+	if len(ValueTypeName) == 0 {
+		ValueTypeName = ctx.Key
+	}
 	dataSchema := &WebDataSchema{
 		KeyName:         rootKey,
+		ValueTypeName:   ValueTypeName,
 		KeyType:         ctx.KeyType,
 		Instance:        obj,
 		JSDoc:           jsdoc,
@@ -54,6 +74,7 @@ func (ctx *RedisKey[k, v]) RegisterWebData() {
 	}
 	WebDataSchemaMap.Set(rootKey, dataSchema)
 }
+
 func init() {
 	go syncWebDataToRedis()
 }
