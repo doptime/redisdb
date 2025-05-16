@@ -1,19 +1,8 @@
 package redisdb
 
 import (
-	"fmt"
 	"reflect"
-	"strings"
-	"sync"
-	"time"
-
-	cmap "github.com/orcaman/concurrent-map/v2"
 )
-
-var WebDataDocsMap cmap.ConcurrentMap[string, *WebDataDocs] = cmap.New[*WebDataDocs]()
-
-var SynWebDataRunOnce = sync.Mutex{}
-var KeyWebDataDocs = NewHashKey[string, *WebDataDocs](Opt.Key("Docs:Data"))
 
 // func initializeFields(value reflect.Value) (ret interface{}) {
 // 	switch value.Kind() {
@@ -119,71 +108,11 @@ func initializeType(t reflect.Type) reflect.Value {
 	}
 }
 
-type WebDataDocs struct {
-	KeyName string
-	// string, hash, list, set, zset, stream
-	KeyType         string
-	UpdateAt        int64
-	CreateFromLocal bool `msgpack:"-"`
-	Instance        interface{}
-}
-
-func (ctx *RedisKey[k, v]) RegisterWebData() {
-	var validRdsKeyTypes = map[string]bool{"string": true, "list": true, "set": true, "hash": true, "zset": true, "stream": true}
-	if _, ok := validRdsKeyTypes[ctx.KeyType]; !ok {
-		return
-	}
-
-	// check if type of v can be instantiated
-	vType := reflect.TypeOf((*v)(nil)).Elem()
-	if vType.Kind() == reflect.Invalid {
-		fmt.Println("vType is not valid, vType: ", vType)
-		return
-	}
-
-	rootKey := strings.Split(ctx.Key, ":")[0]
-	obj := initializeType(vType).Interface()
-	dataSchema := &WebDataDocs{
-		KeyName:         rootKey,
-		KeyType:         ctx.KeyType,
-		Instance:        obj,
-		UpdateAt:        time.Now().Unix(),
-		CreateFromLocal: true,
-	}
-	WebDataDocsMap.Set(ctx.Key, dataSchema)
-	if SynWebDataRunOnce.TryLock() {
-		go syncWebDataToRedis()
-	}
-}
-
-func syncWebDataToRedis() {
-	//wait arrival of other schema to be store in map
-	time.Sleep(time.Second)
-	for {
-		now := time.Now().Unix()
-		//only update local defined data to redis
-		WebDataDocsMap.IterCb(func(key string, value *WebDataDocs) {
-			if value.CreateFromLocal {
-				value.UpdateAt = now
-			}
-		})
-		if WebDataDocsMap.Count() > 0 {
-			KeyWebDataDocs.HSet(WebDataDocsMap.Items())
-		}
-
-		//for the purpose of checking the data schema
-		//copy all data schema to local ,but do not cover the local data
-		if vals, err := KeyWebDataDocs.HGetAll(); err == nil {
-			for k, v := range vals {
-				//if defined in non local, allow to cover the definition
-				//that is ,only local defined data schema can not be covered
-				if v, ok := WebDataDocsMap.Get(k); ok && v.CreateFromLocal {
-					continue
-				}
-				WebDataDocsMap.Set(k, v)
-			}
-		}
-		//sleep 10 min to save next time
-		time.Sleep(time.Minute * 10)
-	}
-}
+// type WebDataSchema struct {
+// 	KeyName string
+// 	// string, hash, list, set, zset, stream
+// 	KeyType         string
+// 	UpdateAt        int64
+// 	CreateFromLocal bool `msgpack:"-"`
+// 	Instance        interface{}
+// }
