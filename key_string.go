@@ -13,9 +13,8 @@ type StringKey[k comparable, v any] struct {
 
 func NewStringKey[k comparable, v any](ops ...Option) *StringKey[k, v] {
 	ctx := &StringKey[k, v]{}
-	ctx.KeyType = "string"
 	op := append(ops, Opt)[0]
-	if err := ctx.applyOption(op); err != nil {
+	if err := ctx.apply(keyTypeStringKey, op); err != nil {
 		logger.Error().Err(err).Msg("data.New failed")
 		return nil
 	}

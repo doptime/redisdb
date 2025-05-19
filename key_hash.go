@@ -17,9 +17,8 @@ type HashKey[k comparable, v any] struct {
 // NewHashKey creates a new HashKey with the given options.
 func NewHashKey[k comparable, v any](ops ...Option) *HashKey[k, v] {
 	ctx := &HashKey[k, v]{}
-	ctx.KeyType = "hash"
 	op := append(ops, Opt)[0]
-	if err := ctx.applyOption(op); err != nil {
+	if err := ctx.apply(keyTypeHashKey, op); err != nil {
 		logger.Error().Err(err).Msg("data.New failed")
 		return nil
 	}

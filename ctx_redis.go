@@ -45,9 +45,9 @@ func (ctx *RedisKey[k, v]) Duplicate(newKey, RdsSourceName string) (newCtx Redis
 }
 
 func NewRedisKey[k comparable, v any](ops ...Option) *RedisKey[k, v] {
-	ctx := &RedisKey[k, v]{Key: "nonkey", KeyType: "nonkey"}
+	ctx := &RedisKey[k, v]{Key: "nonkey"}
 	op := append(ops, Opt)[0]
-	if err := ctx.applyOption(op); err != nil {
+	if err := ctx.apply("nonkey", op); err != nil {
 		logger.Error().Err(err).Msg("data.New failed")
 		return nil
 	}
@@ -85,9 +85,28 @@ func (ctx *RedisKey[k, v]) Scan(cursorOld uint64, match string, count int64) (ke
 	}
 	return keys, cursorNew, nil
 }
-func (ctx *RedisKey[k, v]) applyOption(opt Option) (err error) {
+
+type keyType string
+
+const (
+	keyTypeNonKey    keyType = "nonkey"
+	keyTypeStringKey keyType = "string"
+	keyTypeHashKey   keyType = "hash"
+	keyTypeListKey   keyType = "list"
+	keyTypeSetKey    keyType = "set"
+	keyTypeZSetKey   keyType = "zset"
+	keyTypeStreamKey keyType = "stream"
+)
+
+func (ctx *RedisKey[k, v]) apply(KeyType keyType, opt Option) (err error) {
+	ctx.KeyType = string(KeyType)
+
 	if len(opt.RedisKey) > 0 {
 		ctx.Key = opt.RedisKey
+	}
+	//use "default" as default redis name
+	if ctx.RdsName == "" {
+		ctx.RdsName = "default"
 	}
 	if len(opt.DataSource) > 0 {
 		ctx.RdsName = opt.DataSource

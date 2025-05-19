@@ -13,9 +13,8 @@ type ListKey[v any] struct {
 
 func NewListKey[v any](ops ...Option) *ListKey[v] {
 	ctx := &ListKey[v]{}
-	ctx.KeyType = "list"
 	op := append(ops, Opt)[0]
-	if err := ctx.applyOption(op); err != nil {
+	if err := ctx.apply(keyTypeListKey, op); err != nil {
 		logger.Error().Err(err).Msg("data.New failed")
 		return nil
 	}
