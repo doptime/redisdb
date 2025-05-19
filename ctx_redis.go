@@ -114,6 +114,7 @@ func (ctx *RedisKey[k, v]) applyOption(opt Option) (err error) {
 	// don't register web data if it fully prepared
 	if opt.HttpAccess && ctx.Key != "" {
 		ctx.RegisterWebData()
+		RediskeyForWeb.Set(ctx.Key, ctx)
 	}
 	return nil
 }

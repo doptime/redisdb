@@ -15,7 +15,7 @@ type CtxInterface interface {
 	UnmarshalValue(msgpack []byte) (rets interface{}, err error)
 }
 
-var keyMap cmap.ConcurrentMap[string, CtxInterface] = cmap.New[CtxInterface]()
+var RediskeyForWeb cmap.ConcurrentMap[string, CtxInterface] = cmap.New[CtxInterface]()
 var nonKey = NewRedisKey[string, interface{}]()
 
 func CtxWithValueSchemaChecked(key, keyType string, RedisDataSource string, msgpackData []byte) (db *RedisKey[string, interface{}], value interface{}, err error) {
@@ -23,7 +23,7 @@ func CtxWithValueSchemaChecked(key, keyType string, RedisDataSource string, msgp
 	originalKey = strings.SplitN(key, "@", 2)[0]
 	originalKey = strings.SplitN(originalKey, ":", 2)[0]
 
-	hashInterface, exists := keyMap.Get(originalKey + ":" + RedisDataSource)
+	hashInterface, exists := RediskeyForWeb.Get(originalKey + ":" + RedisDataSource)
 	if hashInterface != nil && exists {
 		useModer = hashInterface.GetUseModer()
 	}
