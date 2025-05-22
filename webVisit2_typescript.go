@@ -83,10 +83,10 @@ func formatTypeNameForTypeScript(name string) string {
 func generateTypeScriptType(t reflect.Type, definedInterfaces map[string]string) (string, map[string]string) {
 	// 处理 time.Time
 	if t == reflect.TypeOf(time.Time{}) {
-		return "Date | string", definedInterfaces // 通常时间会序列化为 ISO 字符串，或者在 JS 中用 Date 对象
+		return "Date", definedInterfaces // 通常时间会序列化为 ISO 字符串，或者在 JS 中用 Date 对象
 	}
 	if t == reflect.TypeOf((*time.Time)(nil)).Elem() { // *time.Time
-		return "Date | string | null", definedInterfaces
+		return "Date | null", definedInterfaces
 	}
 
 	switch t.Kind() {

@@ -27,10 +27,12 @@ func CtxWithValueSchemaChecked(key, keyType string, RedisDataSource string, msgp
 	if hashInterface != nil && exists {
 		useModer = hashInterface.GetUseModer()
 	}
-	value, err = hashInterface.UnmarshalValue(msgpackData)
 
-	if err != nil {
-		return nil, nil, err
+	if len(msgpackData) > 0 {
+		value, err = hashInterface.UnmarshalValue(msgpackData)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	if disallowed, found := DisAllowedDataKeyNames[key]; found && disallowed {
