@@ -7,14 +7,14 @@ import (
 )
 
 func (ctx *RedisKey[k, v]) AutoFill(in interface{}) (err error) {
-	if ctx.autoFiller == nil {
+	if ctx.AutoFiller == nil {
 		return nil
 	}
 	_in, ok := in.(v)
 	if !ok {
 		return fmt.Errorf("invalid type for AutoFill: %T", in)
 	}
-	return ctx.autoFiller(_in)
+	return ctx.AutoFiller(_in)
 }
 func (ctx *RedisKey[k, v]) NewAutoFiller() func(in v) (err error) {
 	vType := reflect.TypeOf((*v)(nil)).Elem()

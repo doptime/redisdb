@@ -32,12 +32,12 @@ func (ctx *RedisKey[k, v]) NewValidator() func(in v) (err error) {
 	}
 }
 func (ctx *RedisKey[k, v]) Validate(in interface{}) (err error) {
-	if ctx.validator == nil {
+	if ctx.Validator == nil {
 		return nil
 	}
 	_in, ok := in.(v)
 	if !ok {
 		return fmt.Errorf("invalid type for AutoFill: %T", in)
 	}
-	return ctx.validator(_in)
+	return ctx.Validator(_in)
 }
