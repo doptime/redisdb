@@ -51,8 +51,6 @@ func NewRedisKey[k comparable, v any](ops ...Option) *RedisKey[k, v] {
 		logger.Error().Err(err).Msg("data.New failed")
 		return nil
 	}
-	ctx.timestampFiller = ctx.NewTimestampFiller()
-	ctx.Validator = ctx.NewValidator()
 	return ctx
 }
 func (ctx *RedisKey[k, v]) Time() (tm time.Time, err error) {
@@ -129,6 +127,8 @@ func (ctx *RedisKey[k, v]) apply(KeyType keyType, opt Option) (err error) {
 	ctx.DeserializeValue = ctx.getDeserializetoValueFunc()
 	ctx.DeserializeValues = ctx.toValuesFunc()
 	ctx.UseModer = RegisterStructModifiers(opt.Modifiers, reflect.TypeOf((*v)(nil)).Elem())
+	ctx.timestampFiller = ctx.NewTimestampFiller()
+	ctx.Validator = ctx.NewValidator()
 
 	// don't register web data if it fully prepared
 	if opt.HttpAccess && ctx.Key != "" {
