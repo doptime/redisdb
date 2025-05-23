@@ -10,6 +10,8 @@ import (
 	"time"
 
 	cmap "github.com/orcaman/concurrent-map/v2"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // NanoId creates a unique identifier using the specified size.
@@ -79,7 +81,7 @@ func ToUppercase(fieldValue interface{}, tagParam string) (interface{}, error) {
 // ToTitleCase converts the string to title case.
 func ToTitleCase(fieldValue interface{}, tagParam string) (interface{}, error) {
 	if str, ok := fieldValue.(string); ok {
-		return strings.Title(strings.ToLower(str)), nil
+		return cases.Title(language.Und, cases.Compact).String(str), nil
 	}
 	return fieldValue, nil
 }

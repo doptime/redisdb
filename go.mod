@@ -11,6 +11,7 @@ require (
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/redis/go-redis/v9 v9.8.0
 	github.com/vmihailenco/msgpack/v5 v5.4.1
+	golang.org/x/text v0.25.0
 )
 
 require (
@@ -32,5 +33,4 @@ require (
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/text v0.25.0 // indirect
 )

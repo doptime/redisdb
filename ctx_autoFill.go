@@ -6,17 +6,17 @@ import (
 	"time"
 )
 
-func (ctx *RedisKey[k, v]) AutoFill(in interface{}) (err error) {
-	if ctx.AutoFiller == nil {
+func (ctx *RedisKey[k, v]) TimestampFill(in interface{}) (err error) {
+	if ctx.timestampFiller == nil {
 		return nil
 	}
 	_in, ok := in.(v)
 	if !ok {
 		return fmt.Errorf("invalid type for AutoFill: %T", in)
 	}
-	return ctx.AutoFiller(_in)
+	return ctx.timestampFiller(_in)
 }
-func (ctx *RedisKey[k, v]) NewAutoFiller() func(in v) (err error) {
+func (ctx *RedisKey[k, v]) NewTimestampFiller() func(in v) (err error) {
 	vType := reflect.TypeOf((*v)(nil)).Elem()
 
 	// 剥离指针直到非指针类型
@@ -41,6 +41,11 @@ func (ctx *RedisKey[k, v]) NewAutoFiller() func(in v) (err error) {
 				updateAtIndex = i
 			}
 		}
+	}
+
+	//return nil function if no field found
+	if createAtIndex == -1 && updateAtIndex == -1 {
+		return nil
 	}
 
 	// 创建闭包，该闭包在每次调用时直接使用预先计算的索引

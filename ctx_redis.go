@@ -24,7 +24,7 @@ type RedisKey[k comparable, v any] struct {
 	SerializeValue       func(value interface{}) (msgpack string, err error)
 	DeserializeValue     func(msgpack []byte) (value v, err error)
 	DeserializeValues    func(msgpacks []string) (values []v, err error)
-	AutoFiller           func(in v) error
+	timestampFiller      func(in v) error
 	Validator            func(in v) error
 	UseModer             bool
 	PrimaryKeyFieldIndex int
@@ -40,7 +40,7 @@ func (ctx *RedisKey[k, v]) V(value v) (ret v) {
 
 func (ctx *RedisKey[k, v]) Duplicate(newKey, RdsSourceName string) (newCtx RedisKey[k, v]) {
 	return RedisKey[k, v]{ctx.Context, RdsSourceName, ctx.Rds, newKey, ctx.KeyType,
-		ctx.SerializeKey, ctx.SerializeValue, ctx.DeserializeValue, ctx.DeserializeValues, ctx.AutoFiller, ctx.Validator,
+		ctx.SerializeKey, ctx.SerializeValue, ctx.DeserializeValue, ctx.DeserializeValues, ctx.timestampFiller, ctx.Validator,
 		ctx.UseModer, ctx.PrimaryKeyFieldIndex}
 }
 
@@ -51,7 +51,7 @@ func NewRedisKey[k comparable, v any](ops ...Option) *RedisKey[k, v] {
 		logger.Error().Err(err).Msg("data.New failed")
 		return nil
 	}
-	ctx.AutoFiller = ctx.NewAutoFiller()
+	ctx.timestampFiller = ctx.NewTimestampFiller()
 	ctx.Validator = ctx.NewValidator()
 	return ctx
 }
@@ -193,7 +193,7 @@ func (ctx *RedisKey[k, v]) UnmarshalValue(msgpackBytes []byte) (rets interface{}
 	}
 
 	// auto fill field UpdateAt and CreateAt
-	err = ctx.AutoFill(vInstance)
+	err = ctx.TimestampFill(vInstance)
 	if err == nil {
 		err = ctx.Validate(vInstance)
 	}
