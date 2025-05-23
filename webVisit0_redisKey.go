@@ -11,6 +11,7 @@ type CtxInterface interface {
 	GetUseModer() bool
 	ValidDataKey() error
 	UnmarshalValue(msgpack []byte) (rets interface{}, err error)
+	TimestampFill(in interface{}) (err error)
 }
 
 var RediskeyForWeb cmap.ConcurrentMap[string, CtxInterface] = cmap.New[CtxInterface]()
