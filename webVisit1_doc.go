@@ -17,7 +17,6 @@ type WebDataSchema struct {
 	UpdateAt    int64
 	JSDoc       string
 	TSInterface string
-	Instance    interface{}
 
 	CreateFromLocal bool `msgpack:"-"`
 }
@@ -55,7 +54,6 @@ func (ctx *RedisKey[k, v]) RegisterWebData() {
 	}
 
 	rootKey := strings.Split(ctx.Key, ":")[0]
-	obj := initializeType(vType).Interface()
 	jsdoc, _ := GenerateAllJSDocTypeDefs(_v)
 	typescriptInterface, _ := GoTypeToTypeScriptInterface(_v)
 	ValueTypeName, _ := valueTypeName((*v)(nil))
@@ -66,7 +64,6 @@ func (ctx *RedisKey[k, v]) RegisterWebData() {
 		KeyName:         rootKey,
 		ValueTypeName:   ValueTypeName,
 		KeyType:         ctx.KeyType,
-		Instance:        obj,
 		JSDoc:           jsdoc,
 		TSInterface:     typescriptInterface,
 		UpdateAt:        time.Now().Unix(),
