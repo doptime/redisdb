@@ -86,7 +86,7 @@ func (ctx *HashKey[k, v]) HGet(field k) (value v, err error) {
 //   - HSet("myhash", "key1", "value1", "key2", "value2")
 //
 //   - HSet("myhash", map[string]interface{}{"key1": "value1", "key2": "value2"})
-func (ctx *HashKey[k, v]) HSet(values ...interface{}) error {
+func (ctx *HashKey[k, v]) HSet(values ...interface{}) (int64, error) {
 
 	if kvMap, ok := values[0].(map[k]v); ok {
 		return ctx.HMSet(kvMap)
@@ -94,13 +94,13 @@ func (ctx *HashKey[k, v]) HSet(values ...interface{}) error {
 	// if Moder is not nil, apply modifiers to the values
 	l := len(values)
 	if l < 2 || l%2 != 0 || reflect.TypeOf(values).Kind() != reflect.Slice {
-		return fmt.Errorf("valid values must be in the format of [key1, value1, key2, value2, ...]")
+		return 0, fmt.Errorf("valid values must be in the format of [key1, value1, key2, value2, ...]")
 	}
 	for i, l := 0, len(values); i < l; i += 2 {
 		_, keyok := values[i].(k)
 		value, valueok := values[i+1].(v)
 		if !keyok || !valueok {
-			return fmt.Errorf("valid values must be in the format of [key1, value1, key2, value2, ...]")
+			return 0, fmt.Errorf("valid values must be in the format of [key1, value1, key2, value2, ...]")
 		}
 
 		if ctx.UseModer {
@@ -110,11 +110,11 @@ func (ctx *HashKey[k, v]) HSet(values ...interface{}) error {
 
 	KeyValuesStrs, err := ctx.toKeyValueStrs(values...)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return ctx.Rds.HSet(ctx.Context, ctx.Key, KeyValuesStrs).Err()
+	return ctx.Rds.HSet(ctx.Context, ctx.Key, KeyValuesStrs).Result()
 }
-func (ctx *HashKey[k, v]) Save(value v) error {
+func (ctx *HashKey[k, v]) Save(value v) (int64, error) {
 	//get first field of v , which type is k
 	var fieldN = reflect.TypeOf(value).NumField()
 	if fieldN == 0 {
@@ -129,10 +129,10 @@ func (ctx *HashKey[k, v]) Save(value v) error {
 			return ctx.HSet(field, value)
 		}
 	}
-	return fmt.Errorf("no field of type k found in value")
+	return 0, fmt.Errorf("no field of type k found in value")
 }
 
-func (ctx *HashKey[k, v]) HMSet(kvMap map[k]v) error {
+func (ctx *HashKey[k, v]) HMSet(kvMap map[k]v) (int64, error) {
 	// if Moder is not nil, apply modifiers to the values
 	if ctx.UseModer {
 		for _, value := range kvMap {
@@ -142,9 +142,9 @@ func (ctx *HashKey[k, v]) HMSet(kvMap map[k]v) error {
 
 	KeyValuesStrs, err := ctx.toKeyValueStrs(kvMap)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return ctx.Rds.HSet(ctx.Context, ctx.Key, KeyValuesStrs).Err()
+	return ctx.Rds.HSet(ctx.Context, ctx.Key, KeyValuesStrs).Result()
 }
 func (ctx *HashKey[k, v]) HExists(field k) (bool, error) {
 	fieldStr, err := ctx.SerializeKey(field)
