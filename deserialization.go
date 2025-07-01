@@ -222,10 +222,14 @@ func (ctx *RedisKey[k, v]) toValuesFunc() func(valStrs []string) (value []v, err
 				values = make([]v, len(valStrs))
 
 				for i, val := range valStrs {
-					values[i] = reflect.New(valueStruct.Elem()).Interface().(v)
-					if err = msgpack.Unmarshal([]byte(val), values[i]); err != nil {
-						break
+					if val == "" {
+						continue
 					}
+					_val := reflect.New(valueStruct.Elem()).Interface().(v)
+					if err = msgpack.Unmarshal([]byte(val), _val); err != nil {
+						continue
+					}
+					values[i] = _val
 				}
 				return values, err
 			}
@@ -233,9 +237,14 @@ func (ctx *RedisKey[k, v]) toValuesFunc() func(valStrs []string) (value []v, err
 			return func(valStrs []string) (values []v, err error) {
 				values = make([]v, len(valStrs))
 				for i, val := range valStrs {
-					if err = msgpack.Unmarshal([]byte(val), &values[i]); err != nil {
-						break
+					if val == "" {
+						continue
 					}
+					var _val v
+					if err = msgpack.Unmarshal([]byte(val), &_val); err != nil {
+						continue
+					}
+					values[i] = _val
 				}
 				return values, err
 			}
