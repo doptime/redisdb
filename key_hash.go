@@ -189,11 +189,12 @@ func (ctx *HashKey[k, v]) HMGET(fields ...interface{}) (values []v, err error) {
 		fieldsString []string
 		rawValues    []string
 	)
+	values = make([]v, len(fields))
 	if fieldsString, err = ctx.toKeyStrs(fields...); err != nil {
-		return nil, err
+		return values, err
 	}
 	if cmd = ctx.Rds.HMGet(ctx.Context, ctx.Key, fieldsString...); cmd.Err() != nil {
-		return nil, cmd.Err()
+		return values, cmd.Err()
 	}
 	rawValues = make([]string, len(cmd.Val()))
 	for i, val := range cmd.Val() {
