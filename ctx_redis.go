@@ -43,14 +43,30 @@ func (ctx *RedisKey[k, v]) Duplicate(newKey, RdsSourceName string) (newCtx Redis
 		ctx.SerializeKey, ctx.SerializeValue, ctx.DeserializeValue, ctx.DeserializeValues, ctx.timestampFiller, ctx.Validator,
 		ctx.UseModer, ctx.PrimaryKeyFieldIndex}
 }
+func (ctx *RedisKey[k, v]) InitFunc() {
+	ctx.Context = context.Background()
+	ctx.SerializeKey = ctx.getSerializeFun(reflect.TypeOf((*k)(nil)).Elem().Kind())
+	ctx.SerializeValue = ctx.getSerializeFun(reflect.TypeOf((*v)(nil)).Elem().Kind())
+	ctx.DeserializeValue = ctx.getDeserializetoValueFunc()
+	ctx.DeserializeValues = ctx.toValuesFunc()
+	ctx.timestampFiller = ctx.NewTimestampFiller()
+	ctx.Validator = ctx.NewValidator()
+}
 
 func NewRedisKey[k comparable, v any](ops ...Option) *RedisKey[k, v] {
 	ctx := &RedisKey[k, v]{Key: "nonkey"}
-	op := append(ops, Opt)[0]
-	if err := ctx.apply("nonkey", op); err != nil {
-		logger.Error().Err(err).Msg("data.New failed")
+	for _, op := range ops {
+		if err := ctx.applyOption(keyTypeNonKey, op); err != nil {
+			logger.Error().Err(err).Msg("data.New failed")
+			return nil
+		}
+	}
+
+	if err := ctx.applyDefaultKey(); err != nil {
+		logger.Error().Err(err).Msg("nonkey in NewRedisKey")
 		return nil
 	}
+	ctx.InitFunc()
 	return ctx
 }
 func (ctx *RedisKey[k, v]) Time() (tm time.Time, err error) {
@@ -96,7 +112,21 @@ const (
 	keyTypeStreamKey keyType = "stream"
 )
 
-func (ctx *RedisKey[k, v]) apply(KeyType keyType, opt Option) (err error) {
+func (ctx *RedisKey[k, v]) applyDefaultKey() (err error) {
+
+	if len(ctx.Key) != 0 {
+		return nil
+	}
+	ctx.Key, err = GetValidDataKeyName((*v)(nil))
+	if err != nil {
+		return err
+	}
+	if len(ctx.Key) == 0 {
+		return fmt.Errorf("invalid data.Ctx Key name")
+	}
+	return nil
+}
+func (ctx *RedisKey[k, v]) applyOption(KeyType keyType, opt Option) (err error) {
 	ctx.KeyType = string(KeyType)
 
 	if len(opt.RedisKey) > 0 {
@@ -109,26 +139,14 @@ func (ctx *RedisKey[k, v]) apply(KeyType keyType, opt Option) (err error) {
 	if len(opt.DataSource) > 0 {
 		ctx.RdsName = opt.DataSource
 	}
-	if len(ctx.Key) == 0 {
-		ctx.Key, err = GetValidDataKeyName((*v)(nil))
-	}
-	if err != nil {
-		return err
-	} else if len(ctx.Key) == 0 {
-		return fmt.Errorf("invalid data.Ctx Key name")
-	}
 	var exists bool
 	if ctx.Rds, exists = cfgredis.Servers.Get(ctx.RdsName); !exists {
 		return fmt.Errorf("rds item unconfigured: " + ctx.RdsName)
 	}
-	ctx.Context = context.Background()
-	ctx.SerializeKey = ctx.getSerializeFun(reflect.TypeOf((*k)(nil)).Elem().Kind())
-	ctx.SerializeValue = ctx.getSerializeFun(reflect.TypeOf((*v)(nil)).Elem().Kind())
-	ctx.DeserializeValue = ctx.getDeserializetoValueFunc()
-	ctx.DeserializeValues = ctx.toValuesFunc()
-	ctx.UseModer = RegisterStructModifiers(opt.Modifiers, reflect.TypeOf((*v)(nil)).Elem())
-	ctx.timestampFiller = ctx.NewTimestampFiller()
-	ctx.Validator = ctx.NewValidator()
+
+	if len(opt.Modifiers) > 0 {
+		ctx.UseModer = RegisterStructModifiers(opt.Modifiers, reflect.TypeOf((*v)(nil)).Elem())
+	}
 
 	// don't register web data if it fully prepared
 	if opt.HttpAccess && ctx.Key != "" {

@@ -10,11 +10,13 @@ type StreamKey[k comparable, v any] struct {
 
 func NewStreamKey[k comparable, v any](ops ...Option) *StreamKey[k, v] {
 	ctx := &StreamKey[k, v]{}
-	op := append(ops, Opt)[0]
-	if err := ctx.apply(keyTypeZSetKey, op); err != nil {
-		logger.Error().Err(err).Msg("data.New failed")
-		return nil
+	for _, op := range ops {
+		if err := ctx.applyOption(keyTypeStreamKey, op); err != nil {
+			logger.Error().Err(err).Msg("data.New failed")
+			return nil
+		}
 	}
+	ctx.InitFunc()
 	return ctx
 }
 

@@ -17,11 +17,17 @@ type HashKey[k comparable, v any] struct {
 // NewHashKey creates a new HashKey with the given options.
 func NewHashKey[k comparable, v any](ops ...Option) *HashKey[k, v] {
 	ctx := &HashKey[k, v]{}
-	op := append(ops, Opt)[0]
-	if err := ctx.apply(keyTypeHashKey, op); err != nil {
-		logger.Error().Err(err).Msg("data.New failed")
+	for _, op := range ops {
+		if err := ctx.applyOption(keyTypeHashKey, op); err != nil {
+			logger.Error().Err(err).Msg("data.New failed")
+			return nil
+		}
+	}
+	if err := ctx.applyDefaultKey(); err != nil {
+		logger.Error().Err(err).Msg("nonkey in NewRedisKey")
 		return nil
 	}
+	ctx.InitFunc()
 	ctx.getPrimaryKeyFieldIndex()
 	return ctx
 }

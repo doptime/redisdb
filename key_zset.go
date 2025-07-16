@@ -14,11 +14,17 @@ type ZSetKey[k comparable, v any] struct {
 
 func NewZSetKey[k comparable, v any](ops ...Option) *ZSetKey[k, v] {
 	ctx := &ZSetKey[k, v]{}
-	op := append(ops, Opt)[0]
-	if err := ctx.apply(keyTypeZSetKey, op); err != nil {
-		logger.Error().Err(err).Msg("data.New failed")
+	for _, op := range ops {
+		if err := ctx.applyOption(keyTypeZSetKey, op); err != nil {
+			logger.Error().Err(err).Msg("data.New failed")
+			return nil
+		}
+	}
+	if err := ctx.applyDefaultKey(); err != nil {
+		logger.Error().Err(err).Msg("nonkey in NewRedisKey")
 		return nil
 	}
+	ctx.InitFunc()
 	return ctx
 }
 

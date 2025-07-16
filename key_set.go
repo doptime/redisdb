@@ -8,11 +8,13 @@ type SetKey[k comparable, v any] struct {
 
 func NewSetKey[k comparable, v any](ops ...Option) *SetKey[k, v] {
 	ctx := &SetKey[k, v]{}
-	op := append(ops, Opt)[0]
-	if err := ctx.apply(keyTypeSetKey, op); err != nil {
-		logger.Error().Err(err).Msg("data.New failed")
-		return nil
+	for _, op := range ops {
+		if err := ctx.applyOption(keyTypeSetKey, op); err != nil {
+			logger.Error().Err(err).Msg("data.New failed")
+			return nil
+		}
 	}
+	ctx.InitFunc()
 	return ctx
 }
 func (ctx *SetKey[k, v]) ConcatKey(fields ...interface{}) *SetKey[k, v] {

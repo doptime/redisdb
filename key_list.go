@@ -13,11 +13,17 @@ type ListKey[v any] struct {
 
 func NewListKey[v any](ops ...Option) *ListKey[v] {
 	ctx := &ListKey[v]{}
-	op := append(ops, Opt)[0]
-	if err := ctx.apply(keyTypeListKey, op); err != nil {
-		logger.Error().Err(err).Msg("data.New failed")
+	for _, op := range ops {
+		if err := ctx.applyOption(keyTypeListKey, op); err != nil {
+			logger.Error().Err(err).Msg("data.New failed")
+			return nil
+		}
+	}
+	if err := ctx.applyDefaultKey(); err != nil {
+		logger.Error().Err(err).Msg("nonkey in NewRedisKey")
 		return nil
 	}
+	ctx.InitFunc()
 	return ctx
 }
 
