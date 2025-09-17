@@ -12,9 +12,9 @@ type ListKey[v any] struct {
 }
 
 func NewListKey[v any](ops ...Option) *ListKey[v] {
-	ctx := &ListKey[v]{}
+	ctx := &ListKey[v]{RedisKey: RedisKey[string, v]{KeyType: keyTypeListKey}}
 	for _, op := range ops {
-		if err := ctx.applyOption(keyTypeListKey, op); err != nil {
+		if err := ctx.applyOption(op); err != nil {
 			logger.Error().Err(err).Msg("data.New failed")
 			return nil
 		}

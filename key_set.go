@@ -7,9 +7,9 @@ type SetKey[k comparable, v any] struct {
 }
 
 func NewSetKey[k comparable, v any](ops ...Option) *SetKey[k, v] {
-	ctx := &SetKey[k, v]{}
+	ctx := &SetKey[k, v]{RedisKey: RedisKey[k, v]{KeyType: keyTypeSetKey}}
 	for _, op := range ops {
-		if err := ctx.applyOption(keyTypeSetKey, op); err != nil {
+		if err := ctx.applyOption(op); err != nil {
 			logger.Error().Err(err).Msg("data.New failed")
 			return nil
 		}

@@ -18,7 +18,7 @@ type RedisKey[k comparable, v any] struct {
 	Rds     *redis.Client
 
 	Key     string
-	KeyType string
+	KeyType KeyType
 
 	SerializeKey         func(value interface{}) (msgpack string, err error)
 	SerializeValue       func(value interface{}) (msgpack string, err error)
@@ -54,9 +54,9 @@ func (ctx *RedisKey[k, v]) InitFunc() {
 }
 
 func NewRedisKey[k comparable, v any](ops ...Option) *RedisKey[k, v] {
-	ctx := &RedisKey[k, v]{Key: "nonkey"}
+	ctx := &RedisKey[k, v]{KeyType: keyTypeNonKey}
 	for _, op := range ops {
-		if err := ctx.applyOption(keyTypeNonKey, op); err != nil {
+		if err := ctx.applyOption(op); err != nil {
 			logger.Error().Err(err).Msg("data.New failed")
 			return nil
 		}
@@ -100,16 +100,16 @@ func (ctx *RedisKey[k, v]) Scan(cursorOld uint64, match string, count int64) (ke
 	return keys, cursorNew, nil
 }
 
-type keyType string
+type KeyType string
 
 const (
-	keyTypeNonKey    keyType = "nonkey"
-	keyTypeStringKey keyType = "string"
-	keyTypeHashKey   keyType = "hash"
-	keyTypeListKey   keyType = "list"
-	keyTypeSetKey    keyType = "set"
-	keyTypeZSetKey   keyType = "zset"
-	keyTypeStreamKey keyType = "stream"
+	keyTypeNonKey    KeyType = "nonkey"
+	keyTypeStringKey KeyType = "string"
+	keyTypeHashKey   KeyType = "hash"
+	keyTypeListKey   KeyType = "list"
+	keyTypeSetKey    KeyType = "set"
+	keyTypeZSetKey   KeyType = "zset"
+	keyTypeStreamKey KeyType = "stream"
 )
 
 func (ctx *RedisKey[k, v]) applyDefaultKey() (err error) {
@@ -126,9 +126,7 @@ func (ctx *RedisKey[k, v]) applyDefaultKey() (err error) {
 	}
 	return nil
 }
-func (ctx *RedisKey[k, v]) applyOption(KeyType keyType, opt Option) (err error) {
-	ctx.KeyType = string(KeyType)
-
+func (ctx *RedisKey[k, v]) applyOption(opt Option) (err error) {
 	if len(opt.RedisKey) > 0 {
 		ctx.Key = opt.RedisKey
 	}

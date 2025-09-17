@@ -16,9 +16,9 @@ type HashKey[k comparable, v any] struct {
 
 // NewHashKey creates a new HashKey with the given options.
 func NewHashKey[k comparable, v any](ops ...Option) *HashKey[k, v] {
-	ctx := &HashKey[k, v]{}
+	ctx := &HashKey[k, v]{RedisKey: RedisKey[k, v]{KeyType: keyTypeHashKey}}
 	for _, op := range ops {
-		if err := ctx.applyOption(keyTypeHashKey, op); err != nil {
+		if err := ctx.applyOption(op); err != nil {
 			logger.Error().Err(err).Msg("data.New failed")
 			return nil
 		}

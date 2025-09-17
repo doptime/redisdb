@@ -39,12 +39,6 @@ func valueTypeName(value interface{}) (Key string, err error) {
 	return Key, nil
 }
 func (ctx *RedisKey[k, v]) RegisterWebData() {
-
-	var validRdsKeyTypes = map[string]bool{"string": true, "list": true, "set": true, "hash": true, "zset": true, "stream": true}
-	if _, ok := validRdsKeyTypes[ctx.KeyType]; !ok {
-		return
-	}
-
 	// check if type of v can be instantiated
 	_v := (*v)(nil)
 	vType := reflect.TypeOf(_v).Elem()
@@ -63,7 +57,7 @@ func (ctx *RedisKey[k, v]) RegisterWebData() {
 	dataSchema := &WebDataSchema{
 		KeyName:         rootKey,
 		ValueTypeName:   ValueTypeName,
-		KeyType:         ctx.KeyType,
+		KeyType:         string(ctx.KeyType),
 		JSDoc:           jsdoc,
 		TSInterface:     typescriptInterface,
 		UpdateAt:        time.Now().Unix(),
