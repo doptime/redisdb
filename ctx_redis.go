@@ -112,6 +112,15 @@ const (
 	keyTypeStreamKey KeyType = "stream"
 )
 
+func IsValidKeyType(keyType string) bool {
+	switch keyType {
+	case string(keyTypeNonKey), string(keyTypeStringKey), string(keyTypeHashKey), string(keyTypeListKey), string(keyTypeSetKey), string(keyTypeZSetKey), string(keyTypeStreamKey):
+		return true
+	default:
+		return false
+	}
+}
+
 func (ctx *RedisKey[k, v]) applyDefaultKey() (err error) {
 
 	if len(ctx.Key) != 0 {
