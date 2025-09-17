@@ -54,18 +54,12 @@ func (ctx *RedisKey[k, v]) InitFunc() {
 }
 
 func NewRedisKey[k comparable, v any](ops ...Option) *RedisKey[k, v] {
-	ctx := &RedisKey[k, v]{KeyType: keyTypeNonKey}
-	for _, op := range ops {
-		if err := ctx.applyOption(op); err != nil {
-			logger.Error().Err(err).Msg("data.New failed")
-			return nil
-		}
-	}
-
-	if err := ctx.applyDefaultKey(); err != nil {
-		logger.Error().Err(err).Msg("nonkey in NewRedisKey")
+	ctx := &RedisKey[k, v]{}
+	if err := ctx.applyOptionsAndCheck(keyTypeNonKey, ops...); err != nil {
+		logger.Error().Err(err).Msg("redisdb.NewRedisKey failed")
 		return nil
 	}
+
 	ctx.InitFunc()
 	return ctx
 }
@@ -121,45 +115,43 @@ func IsValidKeyType(keyType string) bool {
 	}
 }
 
-func (ctx *RedisKey[k, v]) applyDefaultKey() (err error) {
+func (ctx *RedisKey[k, v]) applyOptionsAndCheck(keyType KeyType, opts ...Option) (err error) {
+	//make default Option take effect. "default" as default redis name
+	OptionDefault := Option{
+		RedisKey:        "",
+		KeyType:         keyType,
+		RedisDataSource: "default",
+		HttpAccess:      false,
+		Modifiers:       map[string]ModifierFunc{},
+	}
+	OptionDefault.RedisKey, _ = GetValidDataKeyName((*v)(nil))
+	opts = append([]Option{OptionDefault}, opts...)
+	for _, opt := range opts {
+		if len(opt.RedisKey) > 0 {
+			ctx.Key = opt.RedisKey
+		}
+		if len(opt.RedisDataSource) > 0 {
+			ctx.RdsName = opt.RedisDataSource
+		}
+		if len(opt.Modifiers) > 0 {
+			ctx.UseModer = RegisterStructModifiers(opt.Modifiers, reflect.TypeOf((*v)(nil)).Elem())
+		}
 
-	if len(ctx.Key) != 0 {
-		return nil
+		// don't register web data if it fully prepared
+		if opt.HttpAccess && ctx.Key != "" {
+			ctx.RegisterWebData()
+			RediskeyForWeb.Set(ctx.Key+":"+ctx.RdsName, ctx)
+		}
 	}
-	ctx.Key, err = GetValidDataKeyName((*v)(nil))
-	if err != nil {
-		return err
-	}
+	//check if  options are valid
 	if len(ctx.Key) == 0 {
 		return fmt.Errorf("invalid data.Ctx Key name")
-	}
-	return nil
-}
-func (ctx *RedisKey[k, v]) applyOption(opt Option) (err error) {
-	if len(opt.RedisKey) > 0 {
-		ctx.Key = opt.RedisKey
-	}
-	//use "default" as default redis name
-	if ctx.RdsName == "" {
-		ctx.RdsName = "default"
-	}
-	if len(opt.DataSource) > 0 {
-		ctx.RdsName = opt.DataSource
 	}
 	var exists bool
 	if ctx.Rds, exists = cfgredis.Servers.Get(ctx.RdsName); !exists {
 		return fmt.Errorf("rds item unconfigured: " + ctx.RdsName)
 	}
 
-	if len(opt.Modifiers) > 0 {
-		ctx.UseModer = RegisterStructModifiers(opt.Modifiers, reflect.TypeOf((*v)(nil)).Elem())
-	}
-
-	// don't register web data if it fully prepared
-	if opt.HttpAccess && ctx.Key != "" {
-		ctx.RegisterWebData()
-		RediskeyForWeb.Set(ctx.Key+":"+ctx.RdsName, ctx)
-	}
 	return nil
 }
 

@@ -3,22 +3,23 @@ package redisdb
 
 // Option is parameter to create an API, RPC, or CallAt
 type Option struct {
-	RedisKey   string
-	DataSource string
-	HttpAccess bool
-	Modifiers  map[string]ModifierFunc
+	RedisKey        string
+	KeyType         KeyType
+	RedisDataSource string
+	HttpAccess      bool
+	Modifiers       map[string]ModifierFunc
 }
 
 var Opt = Option{
-	RedisKey:   "",
-	DataSource: "",
-	HttpAccess: false,
-	Modifiers:  map[string]ModifierFunc{},
+	RedisKey:        "",
+	RedisDataSource: "",
+	HttpAccess:      false,
+	Modifiers:       map[string]ModifierFunc{},
 }
 
 func (i Option) cp(o *Option) {
 	o.RedisKey = i.RedisKey
-	o.DataSource = i.DataSource
+	o.RedisDataSource = i.RedisDataSource
 	o.HttpAccess = i.HttpAccess
 	o.Modifiers = map[string]ModifierFunc{}
 	for k, v := range i.Modifiers {
@@ -34,7 +35,7 @@ func (i Option) Key(key string) (o Option) {
 
 func (i Option) Rds(dataSource string) (o Option) {
 	i.cp(&o)
-	o.DataSource = dataSource
+	o.RedisDataSource = dataSource
 	return
 }
 
