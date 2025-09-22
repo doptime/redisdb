@@ -127,6 +127,9 @@ func (ctx *RedisKey[k, v]) applyOptionsAndCheck(keyType KeyType, opts ...Option)
 	OptionDefault.RedisKey, _ = GetValidDataKeyName((*v)(nil))
 	opts = append([]Option{OptionDefault}, opts...)
 	for _, opt := range opts {
+		if len(opt.KeyType) > 0 {
+			ctx.KeyType = opt.KeyType
+		}
 		if len(opt.RedisKey) > 0 {
 			ctx.Key = opt.RedisKey
 		}
