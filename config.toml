@@ -1,0 +1,27 @@
+CONFIG_URL = "abc"
+ConfigUrl = ""
+
+[Http]
+DangerousAutoWhitelist = true
+CORES = "*"
+JwtSecret = "justatestjwtsecret"
+MaxBufferSize = 10485760
+Path = "/"
+Port = 81
+
+[[HttpRPC]]
+Jwt = "jwt"
+Name = "doptime"
+UrlBase = "https://api.doptime.com"
+
+[[Redis]]
+DB = 0
+Host = "host.lan"
+Name = "default"
+Password = "password"
+Port = 6379
+Username = ""
+
+
+[Settings]
+LogLevel = 1
