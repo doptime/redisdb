@@ -35,9 +35,10 @@ func (ctx *RedisKey[k, v]) NewTimestampFiller() func(in v) (err error) {
 	for i := 0; i < vType.NumField(); i++ {
 		field := vType.Field(i)
 		if field.Type == reflect.TypeOf(time.Time{}) {
-			if field.Name == "CreatedAt" {
+			switch field.Name {
+			case "CreatedAt":
 				createAtIndex = i
-			} else if field.Name == "UpdatedAt" {
+			case "UpdatedAt":
 				updateAtIndex = i
 			}
 		}
