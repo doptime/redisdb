@@ -1,191 +1,265 @@
 # RedisDB Context for LLM
 
 **Package:** `github.com/doptime/redisdb`
-**Core Function:** Type-safe Redis wrapper with generics `[K, V]`, auto-serialization (msgpack), modifiers, and validation.
+**Core Philosophy:** Type-safe Redis wrapper using Go Generics `[K, V]` with integrated Web Permissions, Auto-Serialization, and RediSearch/Vector support.
 
-## 1. Configuration & Setup
+---
 
-**Config Format (config.toml):**
+## 1. Setup & Factory Pattern
+
+**Config (`config.toml`):**
+
 ```toml
 [[Redis]]
+Host = "127.0.0.1"
+Port = 6379
 DB = 0
-Host = "host.lan"
 Name = "default"
 Password = "password"
-Port = 6379
-Username = ""
-````
 
-**Init:**
-
-```go
-import (
-    "[github.com/doptime/redisdb](https://github.com/doptime/redisdb)" // Import required to use redisdb.New...
-)
-// cfgredis.Servers.Load("config.toml") must be called before usage
 ```
 
-## 2\. Struct Tags & Magic Fields
+**Initialization:**
+All keys are created via `New{Type}Key[K, V](options...)`.
 
-Models used as `V` (Value) support specific tags.
+* `WithKey("prefix:name")`: Defines the static key or prefix.
+* `WithRds("default")`: Selects the Redis connection block.
+* `HttpOn(Op)`: Registers allowed Web/HTTP operations (Fluent API).
 
-| Tag | Description | Examples |
-| :--- | :--- | :--- |
-| `msgpack` | Field name in Redis | `msgpack:"user_id"` |
-| `mod` | Pre-save modifiers | `mod:"trim,lowercase,default=0"` |
-| `validate` | `go-playground/validator` | `validate:"required,email"` |
+---
 
-**Auto-Fill:** `CreatedAt`/`UpdatedAt` (`time.Time`) are automatically set on save.
+## 2. Models & Struct Tags
+
+Models used as `V` (Values) support specific tags for storage and validation.
+
+| Tag | Context | Description | Example |
+| --- | --- | --- | --- |
+| `msgpack` | Storage | Field name in Redis (Hash/String) | `msgpack:"uid"` |
+| `json` | Search | Field name for **VectorSet/Search** mapping | `json:"title"` |
+| `mod` | Pre-Save | Modifiers applied before saving | `mod:"trim,lowercase"` |
+| `validate` | Validation | Rules via `go-playground/validator` | `validate:"required,email"` |
+
+*Note: `CreatedAt`/`UpdatedAt` (`time.Time`) are auto-populated on save.*
+
+---
+
+## 3. Permission System (Web/HTTP)
+
+RedisDB enforces operation whitelisting based on **Key Scope** (prefix before the first `:`).
+
+**Registration:**
 
 ```go
-type User struct {
-    ID        string    `msgpack:"id" mod:"trim"`
-    Email     string    `msgpack:"email" mod:"trim,lowercase" validate:"email"`
-    Count     int       `msgpack:"cnt" mod:"default=1"`
-    CreatedAt time.Time // Auto-filled
-    UpdatedAt time.Time // Auto-filled
-}
+// Allow Reading Hash data for keys starting with "user:"
+var UserKey = redisdb.NewHashKey[string, *User](
+    redisdb.WithKey("user:profile"),
+).HttpOn(redisdb.HashRead)
+
 ```
 
-## 3\. Type Constructors
+**Verification Global Functions:**
 
-**Pattern:** `New{Type}Key[KeyType, ValType](options...)`
-**Options:**
+* `IsAllowHashOp(key, op)`
+* `IsAllowListOp(key, op)`
+* `IsAllowSetOp(key, op)`
+* `IsAllowZSetOp(key, op)`
+* `IsAllowStringOp(key, op)`
+* `IsAllowStreamOp(key, op)`
+* `IsAllowVectorSetOp(key, op)`
 
-  * `WithKey(key string)`: Define Redis key name.
-  * `WithRds(dsName string)`: Select Redis config block (default "default").
-  * `WithModifier(map)`: Register extra modifiers.
+**Op Constants Groups:** `HashRead`, `HashWrite`, `HashAll`, `VectorSetAll`, etc.
 
-## 4\. Usage Patterns & API Signatures
+---
 
-### StringKey (Simple K-V)
+## 4. API Reference: Standard Data Types
+
+### A. StringKey
+
+**Signature:** `StringKey[k comparable, v any]`
 
 ```go
-// Init: Key=string, Val=*User
+// Init
 kStr := redisdb.NewStringKey[string, *User](redisdb.WithKey("u:str"))
 
-// Usage
-err := kStr.Set("u1", &User{ID: "u1"}, time.Hour)
-user, err := kStr.Get("u1")
+// API Signatures
+func (c *StringKey[k, v]) Set(key k, value v, expiration time.Duration) error
+func (c *StringKey[k, v]) Get(key k) (v, error)
+func (c *StringKey[k, v]) Del(key k) error
+func (c *StringKey[k, v]) GetAll(match string) (map[k]v, error) // Scan & Get
+func (c *StringKey[k, v]) SetAll(kvMap map[k]v) error           // Pipeline Set
+
 ```
 
-**API Signatures:**
+### B. HashKey
 
-```go
-Set(key k, value v, expiration time.Duration) error
-Get(key k) (v, error)
-Del(key k) error
-```
-
-### HashKey (Map/Object)
+**Signature:** `HashKey[k comparable, v any]`
+*Note: `Save(v)` auto-detects the Primary Key if `v` is a struct and a field matches type `k`.*
 
 ```go
 // Init
 kHash := redisdb.NewHashKey[string, *User](redisdb.WithKey("u:hash"))
 
-// Usage
-err := kHash.HSet("u1", &User{ID: "A"}) 
-err := kHash.HMSet(map[string]*User{"u2": {ID: "B"}})
-u, err := kHash.HGet("u1")
-all, err := kHash.HGetAll() // Returns map[string]*User
+// API Signatures
+func (c *HashKey[k, v]) HSet(values ...interface{}) (int64, error)
+func (c *HashKey[k, v]) HMSet(kvMap map[k]v) (int64, error)
+func (c *HashKey[k, v]) HGet(field k) (v, error)
+func (c *HashKey[k, v]) HGetAll() (map[k]v, error)
+func (c *HashKey[k, v]) HDel(fields ...k) error
+func (c *HashKey[k, v]) HExists(field k) (bool, error)
+func (c *HashKey[k, v]) HLen() (int64, error)
+func (c *HashKey[k, v]) HKeys() ([]k, error)
+func (c *HashKey[k, v]) HVals() ([]v, error)
+func (c *HashKey[k, v]) HIncrBy(field k, increment int64) error
+func (c *HashKey[k, v]) HIncrByFloat(field k, increment float64) error
+func (c *HashKey[k, v]) HSetNX(field k, value v) error
+func (c *HashKey[k, v]) HScan(cursor uint64, match string, count int64) ([]k, []v, uint64, error)
+func (c *HashKey[k, v]) Save(value v) (int64, error) // Auto PK detection
+
 ```
 
-**API Signatures:**
+### C. ListKey
 
-```go
-HSet(values ...interface{}) error // Standard redis HSet (keys/values interleaved)
-HMSet(kvMap map[k]v) error        // Type-safe map setter
-HGet(field k) (v, error)
-HGetAll() (map[k]v, error)
-HDel(fields ...k) error
-HExists(field k) (bool, error)
-HKeys() ([]k, error)
-HVals() ([]v, error)
-HLen() (int64, error)
-```
-
-### ListKey (Queue/Stack)
-
-```go
-// Init
-kList := redisdb.NewListKey[string, *User](redisdb.WithKey("u:list"))
-
-// Usage
-err := kList.RPush(&User{ID: "A"}) 
-u, err := kList.LPop() 
-users, err := kList.LRange(0, -1)
-```
-
-**API Signatures:**
-
-```go
-RPush(values ...v) error
-LPush(values ...v) error
-RPop() (v, error)
-LPop() (v, error)
-LRange(start, stop int64) ([]v, error) // 0, -1 for all
-LRem(count int64, value v) error       // Note: Count is FIRST argument
-LTrim(start, stop int64) error
-```
-
-### SetKey (Unique Collection)
+**Signature:** `ListKey[v any]` (Key is always string)
 
 ```go
 // Init
-kSet := redisdb.NewSetKey[string, *User](redisdb.WithKey("u:set"))
+kList := redisdb.NewListKey[*Task](redisdb.WithKey("q:tasks"))
 
-// Usage
-err := kSet.SAdd(&User{ID: "A"})
-exists, err := kSet.SIsMember(&User{ID: "A"})
-users, err := kSet.SMembers()
+// API Signatures
+func (c *ListKey[v]) RPush(values ...v) error
+func (c *ListKey[v]) LPush(values ...v) error
+func (c *ListKey[v]) RPop() (v, error)
+func (c *ListKey[v]) LPop() (v, error)
+func (c *ListKey[v]) LRange(start, stop int64) ([]v, error)
+func (c *ListKey[v]) LRem(count int64, value v) error
+func (c *ListKey[v]) LSet(index int64, value v) error
+func (c *ListKey[v]) LIndex(index int64) (v, error)
+func (c *ListKey[v]) BLPop(timeout time.Duration) (v, error)
+func (c *ListKey[v]) BRPop(timeout time.Duration) (v, error)
+func (c *ListKey[v]) LTrim(start, stop int64) error
+func (c *ListKey[v]) LLen() (int64, error)
+
 ```
 
-**API Signatures:**
+### D. SetKey
 
-```go
-SAdd(param v) error
-SRem(param v) error
-SIsMember(param v) (bool, error)
-SMembers() ([]v, error)
-SCard() (int64, error)
-SScan(cursor uint64, match string, count int64) ([]v, uint64, error)
-```
-
-### ZSetKey (Sorted Set)
+**Signature:** `SetKey[k comparable, v any]`
 
 ```go
 // Init
-kZSet := redisdb.NewZSetKey[string, *ScoreItem](redisdb.WithKey("u:zset"))
+kSet := redisdb.NewSetKey[string, string](redisdb.WithKey("u:tags"))
 
-// Usage
-err := kZSet.ZAdd(redis.Z{Score: 100, Member: item})
-items, err := kZSet.ZRange(0, -1)
+// API Signatures
+func (c *SetKey[k, v]) SAdd(member v) error
+func (c *SetKey[k, v]) SRem(member v) error
+func (c *SetKey[k, v]) SIsMember(member v) (bool, error)
+func (c *SetKey[k, v]) SMembers() ([]v, error)
+func (c *SetKey[k, v]) SCard() (int64, error)
+func (c *SetKey[k, v]) SScan(cursor uint64, match string, count int64) ([]v, uint64, error)
+
 ```
 
-**API Signatures:**
+### E. ZSetKey
+
+**Signature:** `ZSetKey[k comparable, v any]`
+*Dependency: Uses `github.com/redis/go-redis/v9` structs.*
 
 ```go
-// Depends on [github.com/redis/go-redis/v9](https://github.com/redis/go-redis/v9)
-ZAdd(members ...redis.Z) error 
-ZRange(start, stop int64) ([]v, error)
+// Init
+kZSet := redisdb.NewZSetKey[string, *User](redisdb.WithKey("leaderboard"))
+
+// API Signatures
+func (c *ZSetKey[k, v]) ZAdd(members ...redis.Z) error
+func (c *ZSetKey[k, v]) ZRem(members ...interface{}) error
+func (c *ZSetKey[k, v]) ZRange(start, stop int64) ([]v, error)
+func (c *ZSetKey[k, v]) ZRangeWithScores(start, stop int64) ([]v, []float64, error)
+func (c *ZSetKey[k, v]) ZRevRange(start, stop int64) ([]v, error)
+func (c *ZSetKey[k, v]) ZRank(member interface{}) (int64, error)
+func (c *ZSetKey[k, v]) ZScore(member v) (float64, error)
+func (c *ZSetKey[k, v]) ZCard() (int64, error)
+func (c *ZSetKey[k, v]) ZCount(min, max string) (int64, error)
+func (c *ZSetKey[k, v]) ZIncrBy(increment float64, member v) error
+func (c *ZSetKey[k, v]) ZPopMax(count int64) ([]v, []float64, error)
+func (c *ZSetKey[k, v]) ZPopMin(count int64) ([]v, []float64, error)
+
 ```
 
-## 5\. Modifiers Reference
+---
 
-Applied pre-serialization via `mod` tag.
+## 5. API Reference: Vector & Search
 
-  * `trim`: Strip whitespace.
-  * `lowercase`: Convert to lower.
-  * `default={val}`: Set if zero-value.
-  * `unixtime=ms`: Convert time to int64 ms.
-  * `counter`: Auto-increment.
-  * `force`: Apply even if field is set.
+### F. VectorSetKey
 
-<!-- end list -->
+**Signature:** `VectorSetKey[k comparable, v any]`
+**Purpose:** RediSearch (Text) and Vector Similarity (KNN).
+**Note:** `v` should be a Struct (with `json` tags) or `map[string]interface{}`.
 
 ```go
-// Manual Invocation
-redisdb.ApplyModifiers(obj) 
-```
+// Init
+kVec := redisdb.NewVectorSetKey[string, *Doc](redisdb.WithKey("idx:docs"))
+
+// API Signatures
+
+// 1. Index Management
+func (c *VectorSetKey[k, v]) Create(args ...interface{}) error
+func (c *VectorSetKey[k, v]) DropIndex(deleteDocs bool) error
+func (c *VectorSetKey[k, v]) Info() (map[string]interface{}, error)
+func (c *VectorSetKey[k, v]) AliasAdd(alias string) error
+func (c *VectorSetKey[k, v]) AliasUpdate(alias string) error
+func (c *VectorSetKey[k, v]) AliasDel(alias string) error
+func (c *VectorSetKey[k, v]) TagVals(fieldName string) ([]string, error)
+
+// 2. Search
+func (c *VectorSetKey[k, v]) Search(query string, params ...interface{}) (int64, []v, error)
+
+// 3. Helpers
+// Float32ToBytes converts []float32 to LittleEndian []byte for BLOB
+func (c *VectorSetKey[k, v]) Float32ToBytes(floats []float32) []byte 
+// KNNParamHelper constructs query syntax for KNN search
+// Returns: query string ("*=>[KNN...]"), params slice
+func (c *VectorSetKey[k, v]) KNNParamHelper(knum int, vecField string, vector []float32) (string, []interface{})
 
 ```
+
+**Usage Example (Vector Create & Search):**
+
+```go
+// Create
+kVec.Create(
+    "ON", "HASH", "PREFIX", "1", "doc:",
+    "SCHEMA", "title", "TEXT", 
+    "vec", "VECTOR", "HNSW", "6", "TYPE", "FLOAT32", "DIM", "128", "DISTANCE_METRIC", "L2",
+)
+
+// Search
+query, params := kVec.KNNParamHelper(10, "vec", []float32{0.1, ...})
+count, docs, err := kVec.Search(query, params...)
+
+```
+
+---
+
+## 6. Utilities & Modifiers
+
+### Dynamic Keys
+
+Use `ConcatKey` to create a new key instance derived from a base key.
+
+```go
+base := redisdb.NewStringKey[string, any](redisdb.WithKey("user"))
+user1 := base.ConcatKey("1001") // Key becomes "user:1001"
+
+```
+
+### Modifiers Reference (`mod` tag)
+
+Directives applied to struct fields before saving.
+
+* `trim`: `strings.TrimSpace`
+* `lowercase`: `strings.ToLower`
+* `uppercase`: `strings.ToUpper`
+* `default=X`: Sets value `X` if field is zero/empty.
+* `unixtime`: Converts `time.Time` to `int64` (seconds).
+* `unixtime=ms`: Converts `time.Time` to `int64` (milliseconds).
+* `now`: Sets current time if zero.
+* `force`: Applies modifier even if field is already set.
