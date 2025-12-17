@@ -97,13 +97,14 @@ func (ctx *RedisKey[k, v]) Scan(cursorOld uint64, match string, count int64) (ke
 type KeyType string
 
 const (
-	keyTypeNonKey    KeyType = "nonkey"
-	keyTypeStringKey KeyType = "string"
-	keyTypeHashKey   KeyType = "hash"
-	keyTypeListKey   KeyType = "list"
-	keyTypeSetKey    KeyType = "set"
-	keyTypeZSetKey   KeyType = "zset"
-	keyTypeStreamKey KeyType = "stream"
+	keyTypeNonKey       KeyType = "nonkey"
+	keyTypeStringKey    KeyType = "string"
+	keyTypeHashKey      KeyType = "hash"
+	keyTypeListKey      KeyType = "list"
+	keyTypeSetKey       KeyType = "set"
+	keyTypeZSetKey      KeyType = "zset"
+	keyTypeStreamKey    KeyType = "stream"
+	keyTypeVectorSetKey KeyType = "vset"
 )
 
 func IsValidKeyType(keyType string) bool {
@@ -121,7 +122,6 @@ func (ctx *RedisKey[k, v]) applyOptionsAndCheck(keyType KeyType, opts ...Option)
 		RedisKey:        "",
 		KeyType:         keyType,
 		RedisDataSource: "default",
-		HttpAccess:      false,
 		Modifiers:       map[string]ModifierFunc{},
 	}
 	OptionDefault.RedisKey, _ = GetValidDataKeyName((*v)(nil))
@@ -140,11 +140,6 @@ func (ctx *RedisKey[k, v]) applyOptionsAndCheck(keyType KeyType, opts ...Option)
 			ctx.UseModer = RegisterStructModifiers(opt.Modifiers, reflect.TypeOf((*v)(nil)).Elem())
 		}
 
-		// don't register web data if it fully prepared
-		if opt.HttpAccess && ctx.Key != "" {
-			ctx.RegisterWebData()
-			RediskeyForWeb.Set(ctx.Key+":"+ctx.RdsName, ctx)
-		}
 	}
 	//check if  options are valid
 	if len(ctx.Key) == 0 {

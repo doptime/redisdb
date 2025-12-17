@@ -22,8 +22,19 @@ func NewStringKey[k comparable, v any](ops ...Option) *StringKey[k, v] {
 }
 
 func (ctx *StringKey[k, v]) ConcatKey(fields ...interface{}) *StringKey[k, v] {
-	return &StringKey[k, v]{ctx.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
+	return &StringKey[k, v]{ctx.RedisKey.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
 }
+
+func (ctx *StringKey[k, v]) HttpOn(op StringOp) (ctx1 *StringKey[k, v]) {
+	HttpPermissions.Set(keyScope(ctx.Key), uint64(op))
+	// don't register web data if it fully prepared
+	if op != 0 && ctx.Key != "" {
+		ctx.RegisterWebData()
+		RediskeyForWeb.Set(ctx.Key+":"+ctx.RdsName, ctx)
+	}
+	return ctx
+}
+
 func (ctx *StringKey[k, v]) Get(Field k) (value v, err error) {
 	FieldStr, err := ctx.SerializeKey(Field)
 	if err != nil {

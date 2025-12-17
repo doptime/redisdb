@@ -6,21 +6,18 @@ type Option struct {
 	RedisKey        string
 	KeyType         KeyType
 	RedisDataSource string
-	HttpAccess      bool
 	Modifiers       map[string]ModifierFunc
 }
 
 var Opt = Option{
 	RedisKey:        "",
 	RedisDataSource: "",
-	HttpAccess:      false,
 	Modifiers:       map[string]ModifierFunc{},
 }
 
 func (i Option) cp(o *Option) {
 	o.RedisKey = i.RedisKey
 	o.RedisDataSource = i.RedisDataSource
-	o.HttpAccess = i.HttpAccess
 	o.Modifiers = map[string]ModifierFunc{}
 	for k, v := range i.Modifiers {
 		o.Modifiers[k] = v
@@ -39,11 +36,6 @@ func (i Option) Rds(dataSource string) (o Option) {
 	return
 }
 
-func (i Option) HttpVisit() (o Option) {
-	i.cp(&o)
-	o.HttpAccess = true
-	return
-}
 func (i Option) Modifier(extraModifiers map[string]ModifierFunc) (o Option) {
 	i.cp(&o)
 	for k, v := range extraModifiers {

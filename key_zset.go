@@ -23,7 +23,16 @@ func NewZSetKey[k comparable, v any](ops ...Option) *ZSetKey[k, v] {
 }
 
 func (ctx *ZSetKey[k, v]) ConcatKey(fields ...interface{}) *ZSetKey[k, v] {
-	return &ZSetKey[k, v]{ctx.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
+	return &ZSetKey[k, v]{ctx.RedisKey.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
+}
+func (ctx *ZSetKey[k, v]) HttpOn(op ZSetOp) (ctx1 *ZSetKey[k, v]) {
+	HttpPermissions.Set(keyScope(ctx.Key), uint64(op))
+	// don't register web data if it fully prepared
+	if op != 0 && ctx.Key != "" {
+		ctx.RegisterWebData()
+		RediskeyForWeb.Set(ctx.Key+":"+ctx.RdsName, ctx)
+	}
+	return ctx
 }
 
 func (ctx *ZSetKey[k, v]) ZAdd(members ...redis.Z) (err error) {

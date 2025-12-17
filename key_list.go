@@ -20,6 +20,15 @@ func NewListKey[v any](ops ...Option) *ListKey[v] {
 	ctx.InitFunc()
 	return ctx
 }
+func (ctx *ListKey[v]) HttpOn(op ListOp) (ctx1 *ListKey[v]) {
+	HttpPermissions.Set(keyScope(ctx.Key), uint64(op))
+	// don't register web data if it fully prepared
+	if op != 0 && ctx.Key != "" {
+		ctx.RegisterWebData()
+		RediskeyForWeb.Set(ctx.Key+":"+ctx.RdsName, ctx)
+	}
+	return ctx
+}
 
 func (ctx *ListKey[v]) ConcatKey(fields ...interface{}) *ListKey[v] {
 	return &ListKey[v]{ctx.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}

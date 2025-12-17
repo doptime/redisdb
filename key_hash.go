@@ -64,6 +64,14 @@ func (ctx *HashKey[K, V]) getPrimaryKeyFieldIndex() {
 func (ctx *HashKey[k, v]) ConcatKey(fields ...interface{}) *HashKey[k, v] {
 	return &HashKey[k, v]{ctx.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
 }
+func (ctx *HashKey[k, v]) HttpOn(op HashOp) (ctx1 *HashKey[k, v]) {
+	HttpPermissions.Set(keyScope(ctx.Key), uint64(op))
+	if op != 0 && ctx.Key != "" {
+		ctx.RegisterWebData()
+		RediskeyForWeb.Set(ctx.Key+":"+ctx.RdsName, ctx)
+	}
+	return ctx
+}
 
 func (ctx *HashKey[k, v]) HGet(field k) (value v, err error) {
 	fieldStr, err := ctx.SerializeKey(field)
