@@ -211,11 +211,6 @@ const (
 
 var HttpPermissions = cmap.New[uint64]()
 
-func IsAllowedOp(key string, op uint64) bool {
-	mask, ok := HttpPermissions.Get(keyScope(key))
-	return ok && (mask&op) != 0
-}
-
 func IsAllowedHashOp(key string, op HashOp) bool {
 	mask, ok := HttpPermissions.Get(keyScope(key))
 	return ok && (mask&uint64(op)) != 0
@@ -245,7 +240,7 @@ func IsAllowedStreamOp(key string, op StreamOp) bool {
 	mask, ok := HttpPermissions.Get(keyScope(key))
 	return ok && (mask&uint64(op)) != 0
 }
-func IsAllowVectorSetOp(key string, op VectorSetOp) bool {
+func IsAllowedVectorSetOp(key string, op VectorSetOp) bool {
 	mask, ok := HttpPermissions.Get(keyScope(key))
 	return ok && (mask&uint64(op)) != 0
 }
