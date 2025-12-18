@@ -187,13 +187,36 @@ const (
 	VectorSetAll   = VectorSetRead | VectorSetWrite
 )
 
+type KeyOp uint64
+
+const (
+	DelKey     KeyOp = 1 << iota // 对应 DEL
+	ExistsKey                    // 对应 EXISTS
+	ExpireKey                    // 对应 EXPIRE, EXPIREAT
+	PersistKey                   // 对应 PERSIST
+	TTLKey                       // 对应 TTL, PTTL
+	RenameKey                    // 对应 RENAME, RENAMEX
+	TypeKey                      // 对应 TYPE
+	KeysKey                      // 对应 KEYS (全局搜索，通常需要严格控制)
+	TimeKey                      // 对应 TIME
+
+	KeyRead  = ExistsKey | TTLKey | TypeKey | TimeKey
+	KeyWrite = DelKey | ExpireKey | PersistKey | RenameKey
+	KeyAll   = KeyRead | KeyWrite | KeysKey
+)
+
 // -----------------------------------------------------------------------------
 //  Permissions Logic
 // -----------------------------------------------------------------------------
 
 var HttpPermissions = cmap.New[uint64]()
 
-func IsAllowHashOp(key string, op HashOp) bool {
+func IsAllowedOp(key string, op uint64) bool {
+	mask, ok := HttpPermissions.Get(keyScope(key))
+	return ok && (mask&op) != 0
+}
+
+func IsAllowedHashOp(key string, op HashOp) bool {
 	mask, ok := HttpPermissions.Get(keyScope(key))
 	return ok && (mask&uint64(op)) != 0
 }
@@ -203,28 +226,37 @@ func IsAllowListOp(key string, op ListOp) bool {
 	return ok && (mask&uint64(op)) != 0
 }
 
-func IsAllowSetOp(key string, op SetOp) bool {
+func IsAllowedSetOp(key string, op SetOp) bool {
 	mask, ok := HttpPermissions.Get(keyScope(key))
 	return ok && (mask&uint64(op)) != 0
 }
 
-func IsAllowZSetOp(key string, op ZSetOp) bool {
+func IsAllowedZSetOp(key string, op ZSetOp) bool {
 	mask, ok := HttpPermissions.Get(keyScope(key))
 	return ok && (mask&uint64(op)) != 0
 }
 
-func IsAllowStringOp(key string, op StringOp) bool {
+func IsAllowedStringOp(key string, op StringOp) bool {
 	mask, ok := HttpPermissions.Get(keyScope(key))
 	return ok && (mask&uint64(op)) != 0
 }
 
-func IsAllowStreamOp(key string, op StreamOp) bool {
+func IsAllowedStreamOp(key string, op StreamOp) bool {
 	mask, ok := HttpPermissions.Get(keyScope(key))
 	return ok && (mask&uint64(op)) != 0
 }
 func IsAllowVectorSetOp(key string, op VectorSetOp) bool {
 	mask, ok := HttpPermissions.Get(keyScope(key))
 	return ok && (mask&uint64(op)) != 0
+}
+
+func IsAllowKeyOp(key string, op KeyOp) bool {
+	mask, ok := HttpPermissions.Get(keyScope(key))
+	return ok && (mask&uint64(op)) != 0
+}
+func AllowKeyOp(key string, op KeyOp) {
+	mask, _ := HttpPermissions.Get(keyScope(key))
+	HttpPermissions.Set(keyScope(key), mask|uint64(op))
 }
 
 func keyScope(key string) string {
