@@ -23,7 +23,7 @@ const (
 	Type    = 1 << 5 // 对应 TYPE
 	Rename  = 1 << 6 // 对应 RENAME, RENAMEX
 
-	// 基础读写掩码
+	// 基础读写掩码 (无类型常量，自动适配所有 Op)
 	CommonRead  = Exists | TTL | Type
 	CommonWrite = Del | Expire | Persist | Rename
 )
@@ -77,7 +77,7 @@ const (
 	ListAll   = ListRead | ListWrite
 )
 
-// Set 权限 (已补全)
+// Set 权限
 type SetOp uint64
 
 const (
@@ -93,7 +93,7 @@ const (
 	SetAll   = SetRead | SetWrite
 )
 
-// ZSet 权限
+// ZSet 权限 (已补全缺失的操作)
 type ZSetOp uint64
 
 const (
@@ -106,13 +106,24 @@ const (
 	ZCount
 	ZIncrBy
 	ZScan
+	ZRangeByScore
+	ZRevRange
+	ZRevRangeByScore
+	ZRemRangeByScore
+	ZRangeWithScores
+	ZRevRangeWithScores
 
-	ZSetRead  = uint64(ZRange|ZRank|ZScore|ZCard|ZCount|ZScan) | CommonRead
-	ZSetWrite = uint64(ZAdd|ZRem|ZIncrBy) | CommonWrite
-	ZSetAll   = ZSetRead | ZSetWrite
+	// 更新 Read 掩码以包含补全的操作
+	ZSetRead = uint64(ZRange|ZRank|ZScore|ZCard|ZCount|ZScan|
+		ZRangeByScore|ZRevRange|ZRevRangeByScore|ZRangeWithScores|ZRevRangeWithScores) | CommonRead
+
+	// 更新 Write 掩码
+	ZSetWrite = uint64(ZAdd|ZRem|ZIncrBy|ZRemRangeByScore) | CommonWrite
+
+	ZSetAll = ZSetRead | ZSetWrite
 )
 
-// String 权限 (已补全，移除了特有的 Del，复用通用 Del)
+// String 权限
 type StringOp uint64
 
 const (
@@ -126,7 +137,7 @@ const (
 	StringAll   = StringRead | StringWrite
 )
 
-// Stream 权限 (已补全)
+// Stream 权限
 type StreamOp uint64
 
 const (
@@ -193,7 +204,7 @@ func IsAllowedStreamOp(key string, op StreamOp) bool       { return isAllowed(ke
 func IsAllowedVectorSetOp(key string, op VectorSetOp) bool { return isAllowed(key, uint64(op)) }
 
 // 通用生命周期校验 (如 DEL, EXPIRE 直接调用)
-// 传入的 op 是无类型常量 (如 redisdb.Del)，可以直接匹配
+// op 传入无类型常量 (如 redisdb.Del)
 func IsAllowedCommon(key string, op uint64) bool { return isAllowed(key, op) }
 
 // 全局 DB 校验 (强制检查 _systemdb 键)
