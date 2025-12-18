@@ -245,7 +245,7 @@ func IsAllowedVectorSetOp(key string, op VectorSetOp) bool {
 	return ok && (mask&uint64(op)) != 0
 }
 
-func IsAllowKeyOp(key string, op KeyOp) bool {
+func IsAllowedKeyOp(key string, op KeyOp) bool {
 	mask, ok := HttpPermissions.Get(keyScope(key))
 	return ok && (mask&uint64(op)) != 0
 }
