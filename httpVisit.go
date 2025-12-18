@@ -216,7 +216,7 @@ func IsAllowedHashOp(key string, op HashOp) bool {
 	return ok && (mask&uint64(op)) != 0
 }
 
-func IsAllowListOp(key string, op ListOp) bool {
+func IsAllowedListOp(key string, op ListOp) bool {
 	mask, ok := HttpPermissions.Get(keyScope(key))
 	return ok && (mask&uint64(op)) != 0
 }
