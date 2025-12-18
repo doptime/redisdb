@@ -6,21 +6,39 @@ import (
 	cmap "github.com/orcaman/concurrent-map/v2"
 )
 
-// OpType 约束所有操作类型，保证类型安全
-type OpType interface {
-	~uint64
-}
+// SystemDbKey 是全局/系统级操作（如 TIME, KEYS）的专用鉴权键
+const SystemDbKey = "_systemdb"
 
 // -----------------------------------------------------------------------------
-//  Hash
+//  1. 基础通用权限 (无类型常量)
+//  位区间：0-9。全局通用，任何类型自动适配。
 // -----------------------------------------------------------------------------
 
+const (
+	Del     = 1 << 0 // 对应 DEL
+	Exists  = 1 << 1 // 对应 EXISTS
+	Expire  = 1 << 2 // 对应 EXPIRE, EXPIREAT
+	Persist = 1 << 3 // 对应 PERSIST
+	TTL     = 1 << 4 // 对应 TTL, PTTL
+	Type    = 1 << 5 // 对应 TYPE
+	Rename  = 1 << 6 // 对应 RENAME, RENAMEX
+
+	// 基础读写掩码
+	CommonRead  = Exists | TTL | Type
+	CommonWrite = Del | Expire | Persist | Rename
+)
+
+// -----------------------------------------------------------------------------
+//  2. 各类型特定权限 (从 1<<10 开始复用位)
+// -----------------------------------------------------------------------------
+
+// Hash 权限
 type HashOp uint64
 
 const (
-	HGet HashOp = 1 << iota
-	HSet        // Value: 1<<1 (2)
-	HDel        // Value: 1<<2 (4)
+	HGet HashOp = 1 << (10 + iota)
+	HSet
+	HDel
 	HMGET
 	HExists
 	HGetAll
@@ -33,19 +51,16 @@ const (
 	HSetNX
 	HScan
 
-	HashRead  = HGet | HMGET | HExists | HGetAll | HRandField | HLen | HKeys | HVals | HScan
-	HashWrite = HSet | HDel | HIncrBy | HIncrByFloat | HSetNX
+	HashRead  = uint64(HGet|HMGET|HExists|HGetAll|HRandField|HLen|HKeys|HVals|HScan) | CommonRead
+	HashWrite = uint64(HSet|HDel|HIncrBy|HIncrByFloat|HSetNX) | CommonWrite
 	HashAll   = HashRead | HashWrite
 )
 
-// -----------------------------------------------------------------------------
-//  List
-// -----------------------------------------------------------------------------
-
+// List 权限
 type ListOp uint64
 
 const (
-	RPush ListOp = 1 << iota
+	RPush ListOp = 1 << (10 + iota)
 	RPushX
 	LPush
 	RPop
@@ -54,100 +69,68 @@ const (
 	LRem
 	LSet
 	LIndex
-	BLPop
-	BRPop
-	BRPopLPush
-	LInsertBefore
-	LInsertAfter
-	Sort
 	LTrim
 	LLen
 
-	ListRead  = LRange | LIndex | Sort | LLen
-	ListWrite = RPush | RPushX | LPush | RPop | LPop | LRem | LSet | BLPop | BRPop | BRPopLPush | LInsertBefore | LInsertAfter | LTrim
+	ListRead  = uint64(LRange|LIndex|LLen) | CommonRead
+	ListWrite = uint64(RPush|RPushX|LPush|RPop|LPop|LRem|LSet|LTrim) | CommonWrite
 	ListAll   = ListRead | ListWrite
 )
 
-// -----------------------------------------------------------------------------
-//  Set
-// -----------------------------------------------------------------------------
-
+// Set 权限 (已补全)
 type SetOp uint64
 
 const (
-	SAdd SetOp = 1 << iota
+	SAdd SetOp = 1 << (10 + iota)
 	SCard
 	SRem
 	SIsMember
 	SMembers
 	SScan
 
-	SetRead  = SCard | SIsMember | SMembers | SScan
-	SetWrite = SAdd | SRem
+	SetRead  = uint64(SCard|SIsMember|SMembers|SScan) | CommonRead
+	SetWrite = uint64(SAdd|SRem) | CommonWrite
 	SetAll   = SetRead | SetWrite
 )
 
-// -----------------------------------------------------------------------------
-//  ZSet
-// -----------------------------------------------------------------------------
-
+// ZSet 权限
 type ZSetOp uint64
 
 const (
-	ZAdd ZSetOp = 1 << iota
+	ZAdd ZSetOp = 1 << (10 + iota)
 	ZRem
 	ZRange
-	ZRangeWithScores
-	ZRevRangeWithScores
 	ZRank
-	ZRevRank
 	ZScore
 	ZCard
 	ZCount
-	ZRangeByScore
-	ZRangeByScoreWithScores
-	ZRevRangeByScore
-	ZRevRange
-	ZRevRangeByScoreWithScores
-	ZRemRangeByRank
-	ZRemRangeByScore
 	ZIncrBy
-	ZPopMax
-	ZPopMin
-	ZLexCount
 	ZScan
 
-	ZSetRead  = ZRange | ZRangeWithScores | ZRevRangeWithScores | ZRank | ZRevRank | ZScore | ZCard | ZCount | ZRangeByScore | ZRangeByScoreWithScores | ZRevRangeByScore | ZRevRange | ZRevRangeByScoreWithScores | ZLexCount | ZScan
-	ZSetWrite = ZAdd | ZRem | ZRemRangeByRank | ZRemRangeByScore | ZIncrBy | ZPopMax | ZPopMin
+	ZSetRead  = uint64(ZRange|ZRank|ZScore|ZCard|ZCount|ZScan) | CommonRead
+	ZSetWrite = uint64(ZAdd|ZRem|ZIncrBy) | CommonWrite
 	ZSetAll   = ZSetRead | ZSetWrite
 )
 
-// -----------------------------------------------------------------------------
-//  String
-// -----------------------------------------------------------------------------
-
+// String 权限 (已补全，移除了特有的 Del，复用通用 Del)
 type StringOp uint64
 
 const (
-	Get StringOp = 1 << iota
+	Get StringOp = 1 << (10 + iota)
 	Set
-	Del
 	StringGetAll
 	StringSetAll
 
-	StringRead  = Get | StringGetAll
-	StringWrite = Set | Del | StringSetAll
+	StringRead  = uint64(Get|StringGetAll) | CommonRead
+	StringWrite = uint64(Set|StringSetAll) | CommonWrite
 	StringAll   = StringRead | StringWrite
 )
 
-// -----------------------------------------------------------------------------
-//  Stream
-// -----------------------------------------------------------------------------
-
+// Stream 权限 (已补全)
 type StreamOp uint64
 
 const (
-	XAdd StreamOp = 1 << iota
+	XAdd StreamOp = 1 << (10 + iota)
 	XDel
 	XRange
 	XLen
@@ -155,104 +138,89 @@ const (
 	XTrim
 	XInfo
 
-	StreamRead  = XRange | XLen | XRead | XInfo
-	StreamWrite = XAdd | XDel | XTrim
+	StreamRead  = uint64(XRange|XLen|XRead|XInfo) | CommonRead
+	StreamWrite = uint64(XAdd|XDel|XTrim) | CommonWrite
 	StreamAll   = StreamRead | StreamWrite
 )
 
-// -----------------------------------------------------------------------------
-//  VectorSet Operations
-// -----------------------------------------------------------------------------
-
+// VectorSet (FT.*) 权限
 type VectorSetOp uint64
 
 const (
-	FtCreate VectorSetOp = 1 << iota
-	FtSearch             // Covers FT.SEARCH
+	FtCreate VectorSetOp = 1 << (10 + iota)
+	FtSearch
 	FtAggregate
 	FtDropIndex
-	FtAliasAdd
-	FtAliasUpdate
-	FtAliasDel
 	FtTagVals
-	FtSugAdd
-	FtSugGet
-	FtSugDel
-	FtSugLen
 	FtInfo
 
-	// Group Masks
-	VectorSetRead  = FtSearch | FtAggregate | FtTagVals | FtSugGet | FtSugLen | FtInfo
-	VectorSetWrite = FtCreate | FtDropIndex | FtAliasAdd | FtAliasUpdate | FtAliasDel | FtSugAdd | FtSugDel
+	VectorSetRead  = uint64(FtSearch|FtAggregate|FtTagVals|FtInfo) | CommonRead
+	VectorSetWrite = uint64(FtCreate|FtDropIndex) | CommonWrite
 	VectorSetAll   = VectorSetRead | VectorSetWrite
 )
 
-type KeyOp uint64
+// -----------------------------------------------------------------------------
+//  3. 系统级权限 (针对全局命令)
+// -----------------------------------------------------------------------------
+
+type DBOp uint64
 
 const (
-	DelKey     KeyOp = 1 << iota // 对应 DEL
-	ExistsKey                    // 对应 EXISTS
-	ExpireKey                    // 对应 EXPIRE, EXPIREAT
-	PersistKey                   // 对应 PERSIST
-	TTLKey                       // 对应 TTL, PTTL
-	RenameKey                    // 对应 RENAME, RENAMEX
-	TypeKey                      // 对应 TYPE
-	KeysKey                      // 对应 KEYS (全局搜索，通常需要严格控制)
-	TimeKey                      // 对应 TIME
-
-	KeyRead  = ExistsKey | TTLKey | TypeKey | TimeKey
-	KeyWrite = DelKey | ExpireKey | PersistKey | RenameKey
-	KeyAll   = KeyRead | KeyWrite | KeysKey
+	DBTime DBOp = 1 << 10 // 对应 TIME
+	DBKeys DBOp = 1 << 11 // 对应 KEYS
 )
 
 // -----------------------------------------------------------------------------
-//  Permissions Logic
+//  4. 权限逻辑实现
 // -----------------------------------------------------------------------------
 
 var HttpPermissions = cmap.New[uint64]()
 
-func IsAllowedHashOp(key string, op HashOp) bool {
+// 底层校验：检查 Key 的掩码是否包含该操作位
+func isAllowed(key string, op uint64) bool {
 	mask, ok := HttpPermissions.Get(keyScope(key))
-	return ok && (mask&uint64(op)) != 0
+	return ok && (mask&op) != 0
 }
 
-func IsAllowedListOp(key string, op ListOp) bool {
-	mask, ok := HttpPermissions.Get(keyScope(key))
-	return ok && (mask&uint64(op)) != 0
+// --- 暴露给 API 层的校验接口 ---
+
+func IsAllowedHashOp(key string, op HashOp) bool           { return isAllowed(key, uint64(op)) }
+func IsAllowedListOp(key string, op ListOp) bool           { return isAllowed(key, uint64(op)) }
+func IsAllowedSetOp(key string, op SetOp) bool             { return isAllowed(key, uint64(op)) }
+func IsAllowedZSetOp(key string, op ZSetOp) bool           { return isAllowed(key, uint64(op)) }
+func IsAllowedStringOp(key string, op StringOp) bool       { return isAllowed(key, uint64(op)) }
+func IsAllowedStreamOp(key string, op StreamOp) bool       { return isAllowed(key, uint64(op)) }
+func IsAllowedVectorSetOp(key string, op VectorSetOp) bool { return isAllowed(key, uint64(op)) }
+
+// 通用生命周期校验 (如 DEL, EXPIRE 直接调用)
+// 传入的 op 是无类型常量 (如 redisdb.Del)，可以直接匹配
+func IsAllowedCommon(key string, op uint64) bool { return isAllowed(key, op) }
+
+// 全局 DB 校验 (强制检查 _systemdb 键)
+func IsAllowedDBOp(op DBOp) bool { return isAllowed(SystemDbKey, uint64(op)) }
+
+// --- 权限设置接口 ---
+
+func allow(key string, op uint64) {
+	scope := keyScope(key)
+	mask, _ := HttpPermissions.Get(scope)
+	HttpPermissions.Set(scope, mask|op)
 }
 
-func IsAllowedSetOp(key string, op SetOp) bool {
-	mask, ok := HttpPermissions.Get(keyScope(key))
-	return ok && (mask&uint64(op)) != 0
-}
+func AllowHashOp(key string, op uint64)      { allow(key, op) }
+func AllowListOp(key string, op uint64)      { allow(key, op) }
+func AllowSetOp(key string, op uint64)       { allow(key, op) }
+func AllowZSetOp(key string, op uint64)      { allow(key, op) }
+func AllowStringOp(key string, op uint64)    { allow(key, op) }
+func AllowStreamOp(key string, op uint64)    { allow(key, op) }
+func AllowVectorSetOp(key string, op uint64) { allow(key, op) }
 
-func IsAllowedZSetOp(key string, op ZSetOp) bool {
-	mask, ok := HttpPermissions.Get(keyScope(key))
-	return ok && (mask&uint64(op)) != 0
-}
+// AllowDBOp 设置全局系统权限
+func AllowDBOp(op DBOp) { allow(SystemDbKey, uint64(op)) }
 
-func IsAllowedStringOp(key string, op StringOp) bool {
-	mask, ok := HttpPermissions.Get(keyScope(key))
-	return ok && (mask&uint64(op)) != 0
-}
-
-func IsAllowedStreamOp(key string, op StreamOp) bool {
-	mask, ok := HttpPermissions.Get(keyScope(key))
-	return ok && (mask&uint64(op)) != 0
-}
-func IsAllowedVectorSetOp(key string, op VectorSetOp) bool {
-	mask, ok := HttpPermissions.Get(keyScope(key))
-	return ok && (mask&uint64(op)) != 0
-}
-
-func IsAllowedKeyOp(key string, op KeyOp) bool {
-	mask, ok := HttpPermissions.Get(keyScope(key))
-	return ok && (mask&uint64(op)) != 0
-}
-func AllowKeyOp(key string, op KeyOp) {
-	mask, _ := HttpPermissions.Get(keyScope(key))
-	HttpPermissions.Set(keyScope(key), mask|uint64(op))
-}
+// -----------------------------------------------------------------------------
+//  工具函数
+// -----------------------------------------------------------------------------
 
 func keyScope(key string) string {
 	if before, _, found := strings.Cut(key, ":"); found {
