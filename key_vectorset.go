@@ -11,33 +11,6 @@ import (
 )
 
 // -----------------------------------------------------------------------------
-//  VectorSet Operations
-// -----------------------------------------------------------------------------
-
-type VectorSetOp uint64
-
-const (
-	FtCreate VectorSetOp = 1 << iota
-	FtSearch             // Covers FT.SEARCH
-	FtAggregate
-	FtDropIndex
-	FtAliasAdd
-	FtAliasUpdate
-	FtAliasDel
-	FtTagVals
-	FtSugAdd
-	FtSugGet
-	FtSugDel
-	FtSugLen
-	FtInfo
-
-	// Group Masks
-	VectorSetRead  = FtSearch | FtAggregate | FtTagVals | FtSugGet | FtSugLen | FtInfo
-	VectorSetWrite = FtCreate | FtDropIndex | FtAliasAdd | FtAliasUpdate | FtAliasDel | FtSugAdd | FtSugDel
-	VectorSetAll   = VectorSetRead | VectorSetWrite
-)
-
-// -----------------------------------------------------------------------------
 //  VectorSetKey Implementation
 // -----------------------------------------------------------------------------
 
