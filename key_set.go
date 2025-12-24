@@ -18,6 +18,9 @@ func NewSetKey[k comparable, v any](ops ...Option) *SetKey[k, v] {
 func (ctx *SetKey[k, v]) ConcatKey(fields ...interface{}) *SetKey[k, v] {
 	return &SetKey[k, v]{ctx.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
 }
+func (ctx *SetKey[k, v]) Clone(newKey, RdsSourceName string) (newCtx CtxInterface) {
+	return &SetKey[k, v]{ctx.Duplicate(newKey, RdsSourceName)}
+}
 func (ctx *SetKey[k, v]) HttpOn(op SetOp) (ctx1 *SetKey[k, v]) {
 	HttpPermissions.Set(KeyScope(ctx.Key), uint64(op))
 	// don't register web data if it fully prepared

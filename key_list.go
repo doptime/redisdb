@@ -33,6 +33,9 @@ func (ctx *ListKey[v]) HttpOn(op ListOp) (ctx1 *ListKey[v]) {
 func (ctx *ListKey[v]) ConcatKey(fields ...interface{}) *ListKey[v] {
 	return &ListKey[v]{ctx.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
 }
+func (ctx *ListKey[v]) Clone(newKey, RdsSourceName string) (newCtx CtxInterface) {
+	return &ListKey[v]{ctx.Duplicate(newKey, RdsSourceName)}
+}
 func (ctx *ListKey[v]) RPush(param ...v) error {
 	vals, err := ctx.toValueStrsSlice(param...)
 	if err != nil {

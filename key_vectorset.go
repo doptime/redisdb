@@ -34,6 +34,9 @@ func NewVectorSetKey[k comparable, v any](ops ...Option) *VectorSetKey[k, v] {
 func (ctx *VectorSetKey[k, v]) ConcatKey(fields ...interface{}) *VectorSetKey[k, v] {
 	return &VectorSetKey[k, v]{ctx.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
 }
+func (ctx *VectorSetKey[k, v]) Clone(newKey, RdsSourceName string) (newCtx CtxInterface) {
+	return &SetKey[k, v]{ctx.Duplicate(newKey, RdsSourceName)}
+}
 
 func (ctx *VectorSetKey[k, v]) HttpOn(op VectorSetOp) *VectorSetKey[k, v] {
 	HttpPermissions.Set(KeyScope(ctx.Key), uint64(op))

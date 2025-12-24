@@ -24,6 +24,9 @@ func NewStringKey[k comparable, v any](ops ...Option) *StringKey[k, v] {
 func (ctx *StringKey[k, v]) ConcatKey(fields ...interface{}) *StringKey[k, v] {
 	return &StringKey[k, v]{ctx.RedisKey.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
 }
+func (ctx *StringKey[k, v]) Clone(newKey, RdsSourceName string) (newCtx CtxInterface) {
+	return &StringKey[k, v]{ctx.Duplicate(newKey, RdsSourceName)}
+}
 
 func (ctx *StringKey[k, v]) HttpOn(op StringOp) (ctx1 *StringKey[k, v]) {
 	HttpPermissions.Set(KeyScope(ctx.Key), uint64(op))

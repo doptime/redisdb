@@ -25,6 +25,9 @@ func NewZSetKey[k comparable, v any](ops ...Option) *ZSetKey[k, v] {
 func (ctx *ZSetKey[k, v]) ConcatKey(fields ...interface{}) *ZSetKey[k, v] {
 	return &ZSetKey[k, v]{ctx.RedisKey.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
 }
+func (ctx *ZSetKey[k, v]) Clone(newKey, RdsSourceName string) (newCtx CtxInterface) {
+	return &SetKey[k, v]{ctx.Duplicate(newKey, RdsSourceName)}
+}
 func (ctx *ZSetKey[k, v]) HttpOn(op ZSetOp) (ctx1 *ZSetKey[k, v]) {
 	HttpPermissions.Set(KeyScope(ctx.Key), uint64(op))
 	// don't register web data if it fully prepared

@@ -21,6 +21,9 @@ func NewStreamKey[k comparable, v any](ops ...Option) *StreamKey[k, v] {
 func (ctx *StreamKey[k, v]) ConcatKey(fields ...interface{}) *StreamKey[k, v] {
 	return &StreamKey[k, v]{ctx.RedisKey.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
 }
+func (ctx *StreamKey[k, v]) Clone(newKey, RdsSourceName string) (newCtx CtxInterface) {
+	return &StreamKey[k, v]{ctx.Duplicate(newKey, RdsSourceName)}
+}
 
 func (ctx *StreamKey[k, v]) HttpOn(op StreamOp) (ctx1 *StreamKey[k, v]) {
 	HttpPermissions.Set(KeyScope(ctx.Key), uint64(op))
