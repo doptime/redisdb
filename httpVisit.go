@@ -189,7 +189,7 @@ var HttpPermissions = cmap.New[uint64]()
 
 // 底层校验：检查 Key 的掩码是否包含该操作位
 func isAllowed(key string, op uint64) bool {
-	mask, ok := HttpPermissions.Get(keyScope(key))
+	mask, ok := HttpPermissions.Get(KeyScope(key))
 	return ok && (mask&op) != 0
 }
 
@@ -213,7 +213,7 @@ func IsAllowedDBOp(op DBOp) bool { return isAllowed(SystemDbKey, uint64(op)) }
 // --- 权限设置接口 ---
 
 func allow(key string, op uint64) {
-	scope := keyScope(key)
+	scope := KeyScope(key)
 	mask, _ := HttpPermissions.Get(scope)
 	HttpPermissions.Set(scope, mask|op)
 }
@@ -229,11 +229,8 @@ func AllowVectorSetOp(key string, op uint64) { allow(key, op) }
 // AllowDBOp 设置全局系统权限
 func AllowDBOp(op DBOp) { allow(SystemDbKey, uint64(op)) }
 
-// -----------------------------------------------------------------------------
-//  工具函数
-// -----------------------------------------------------------------------------
-
-func keyScope(key string) string {
+// scope of a redis key (prefix before ':')
+func KeyScope(key string) string {
 	if before, _, found := strings.Cut(key, ":"); found {
 		return before
 	}
