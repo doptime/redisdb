@@ -17,7 +17,8 @@ type CtxInterface interface {
 var RediskeyForWeb cmap.ConcurrentMap[string, CtxInterface] = cmap.New[CtxInterface]()
 
 func (ctx *RedisKey[k, v]) ValidDataKey() error {
-	if disallowed, found := DisAllowedDataKeyNames[ctx.Key]; found && disallowed {
+	_keyscope := KeyScope(ctx.Key)
+	if disallowed, found := DisAllowedDataKeyNames[_keyscope]; found && disallowed {
 		return fmt.Errorf("key name is disallowed: " + ctx.Key)
 	}
 	if _, ok := cfgredis.Servers.Get(ctx.RdsName); !ok {
