@@ -24,9 +24,6 @@ func NewStringKey[k comparable, v any](ops ...Option) *StringKey[k, v] {
 func (ctx *StringKey[k, v]) ConcatKey(fields ...interface{}) *StringKey[k, v] {
 	return &StringKey[k, v]{ctx.RedisKey.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
 }
-func (ctx *StringKey[k, v]) Clone(newKey, RdsSourceName string) (newCtx CtxInterface) {
-	return &StringKey[k, v]{ctx.Duplicate(newKey, RdsSourceName)}
-}
 
 func (ctx *StringKey[k, v]) HttpOn(op StringOp) (ctx1 *StringKey[k, v]) {
 	HttpPermissions.Set(KeyScope(ctx.Key), uint64(op))
@@ -59,7 +56,7 @@ func (ctx *StringKey[k, v]) Get(Field k) (value v, err error) {
 	if err != nil {
 		return value, err
 	}
-	return ctx.DeserializeValue(data)
+	return ctx.DeserializeToValue(data)
 }
 
 func (ctx *StringKey[k, v]) Set(key k, value v, expiration time.Duration) error {
@@ -109,7 +106,7 @@ func (ctx *StringKey[k, v]) GetAll(match string) (mapOut map[k]v, err error) {
 			logger.Info().AnErr("GetAll: key unmarshal error:", err).Msgf("Key: %s", ctx.Key)
 			continue
 		}
-		v, err := ctx.DeserializeValue(val)
+		v, err := ctx.DeserializeToValue(val)
 		if err != nil {
 			logger.Info().AnErr("GetAll: value unmarshal error:", err).Msgf("Key: %s", ctx.Key)
 			continue

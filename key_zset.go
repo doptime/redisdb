@@ -25,9 +25,7 @@ func NewZSetKey[k comparable, v any](ops ...Option) *ZSetKey[k, v] {
 func (ctx *ZSetKey[k, v]) ConcatKey(fields ...interface{}) *ZSetKey[k, v] {
 	return &ZSetKey[k, v]{ctx.RedisKey.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
 }
-func (ctx *ZSetKey[k, v]) Clone(newKey, RdsSourceName string) (newCtx CtxInterface) {
-	return &SetKey[k, v]{ctx.Duplicate(newKey, RdsSourceName)}
-}
+
 func (ctx *ZSetKey[k, v]) HttpOn(op ZSetOp) (ctx1 *ZSetKey[k, v]) {
 	HttpPermissions.Set(KeyScope(ctx.Key), uint64(op))
 	// don't register web data if it fully prepared
@@ -190,7 +188,7 @@ func (ctx *ZSetKey[k, v]) ZScan(cursor uint64, match string, count int64) (value
 	strs, rcursor, err = ctx.Rds.ZScan(ctx.Context, ctx.Key, cursor, match, count).Result()
 	values = make([]v, 0, len(strs))
 	for _, s := range strs {
-		if _v, err := ctx.DeserializeValue([]byte(s)); err == nil {
+		if _v, err := ctx.DeserializeToValue([]byte(s)); err == nil {
 			values = append(values, _v)
 		}
 	}

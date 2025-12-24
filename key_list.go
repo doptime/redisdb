@@ -33,9 +33,6 @@ func (ctx *ListKey[v]) HttpOn(op ListOp) (ctx1 *ListKey[v]) {
 func (ctx *ListKey[v]) ConcatKey(fields ...interface{}) *ListKey[v] {
 	return &ListKey[v]{ctx.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
 }
-func (ctx *ListKey[v]) Clone(newKey, RdsSourceName string) (newCtx CtxInterface) {
-	return &ListKey[v]{ctx.Duplicate(newKey, RdsSourceName)}
-}
 func (ctx *ListKey[v]) RPush(param ...v) error {
 	vals, err := ctx.toValueStrsSlice(param...)
 	if err != nil {
@@ -68,7 +65,7 @@ func (ctx *ListKey[v]) RPop() (ret v, err error) {
 	if err != nil {
 		return ret, err
 	}
-	return ctx.DeserializeValue(data)
+	return ctx.DeserializeToValue(data)
 }
 
 func (ctx *ListKey[v]) LPop() (ret v, err error) {
@@ -80,7 +77,7 @@ func (ctx *ListKey[v]) LPop() (ret v, err error) {
 	if err != nil {
 		return ret, err
 	}
-	return ctx.DeserializeValue(data)
+	return ctx.DeserializeToValue(data)
 }
 
 func (ctx *ListKey[v]) LRange(start, stop int64) ([]v, error) {
@@ -90,7 +87,7 @@ func (ctx *ListKey[v]) LRange(start, stop int64) ([]v, error) {
 	}
 	values := make([]v, len(cmd.Val()))
 	for i, v := range cmd.Val() {
-		value, err := ctx.DeserializeValue([]byte(v))
+		value, err := ctx.DeserializeToValue([]byte(v))
 		if err != nil {
 			return nil, err
 		}
@@ -123,7 +120,7 @@ func (ctx *ListKey[v]) LIndex(ind int64) (ret v, err error) {
 	if err != nil {
 		return ret, err
 	}
-	return ctx.DeserializeValue(data)
+	return ctx.DeserializeToValue(data)
 }
 
 func (ctx *ListKey[v]) BLPop(timeout time.Duration) (ret v, err error) {
@@ -135,7 +132,7 @@ func (ctx *ListKey[v]) BLPop(timeout time.Duration) (ret v, err error) {
 	if err != nil {
 		return ret, err
 	}
-	return ctx.DeserializeValue([]byte(data[1]))
+	return ctx.DeserializeToValue([]byte(data[1]))
 }
 
 func (ctx *ListKey[v]) BRPop(timeout time.Duration) (ret v, err error) {
@@ -147,7 +144,7 @@ func (ctx *ListKey[v]) BRPop(timeout time.Duration) (ret v, err error) {
 	if err != nil {
 		return ret, err
 	}
-	return ctx.DeserializeValue([]byte(data[1]))
+	return ctx.DeserializeToValue([]byte(data[1]))
 }
 
 func (ctx *ListKey[v]) BRPopLPush(destination string, timeout time.Duration) (ret v, err error) {
@@ -159,7 +156,7 @@ func (ctx *ListKey[v]) BRPopLPush(destination string, timeout time.Duration) (re
 	if err != nil {
 		return ret, err
 	}
-	return ctx.DeserializeValue(data)
+	return ctx.DeserializeToValue(data)
 }
 
 func (ctx *ListKey[v]) LInsertBefore(pivot, param v) error {
@@ -192,7 +189,7 @@ func (ctx *ListKey[v]) Sort(sort *redis.Sort) ([]v, error) {
 	}
 	values := make([]v, len(cmd.Val()))
 	for i, v := range cmd.Val() {
-		value, err := ctx.DeserializeValue([]byte(v))
+		value, err := ctx.DeserializeToValue([]byte(v))
 		if err != nil {
 			return nil, err
 		}

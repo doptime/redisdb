@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func (ctx *RedisKey[k, v]) TimestampFill(in interface{}) (err error) {
+func (ctx *RedisKey[k, v]) TimestampFiller(in interface{}) (err error) {
 	if ctx.timestampFiller == nil {
 		return nil
 	}

@@ -64,9 +64,6 @@ func (ctx *HashKey[K, V]) getPrimaryKeyFieldIndex() {
 func (ctx *HashKey[k, v]) ConcatKey(fields ...interface{}) *HashKey[k, v] {
 	return &HashKey[k, v]{ctx.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
 }
-func (ctx *HashKey[k, v]) Clone(newKey, RdsSourceName string) (newCtx CtxInterface) {
-	return &HashKey[k, v]{ctx.Duplicate(newKey, RdsSourceName)}
-}
 func (ctx *HashKey[k, v]) HttpOn(op HashOp) (ctx1 *HashKey[k, v]) {
 	HttpPermissions.Set(KeyScope(ctx.Key), uint64(op))
 	if op != 0 && ctx.Key != "" {
@@ -89,7 +86,7 @@ func (ctx *HashKey[k, v]) HGet(field k) (value v, err error) {
 	if err != nil {
 		return value, err
 	}
-	return ctx.DeserializeValue(data)
+	return ctx.DeserializeToValue(data)
 }
 
 // HSet accepts values in following formats:
@@ -176,7 +173,7 @@ func (ctx *HashKey[k, v]) HGetAll() (map[k]v, error) {
 		if err != nil {
 			continue
 		}
-		value, err := ctx.DeserializeValue([]byte(v))
+		value, err := ctx.DeserializeToValue([]byte(v))
 		if err != nil {
 			continue
 		}
@@ -214,7 +211,7 @@ func (ctx *HashKey[k, v]) HMGET(fields ...interface{}) (values []v, err error) {
 		}
 		rawValues[i] = val.(string)
 	}
-	return ctx.DeserializeValues(rawValues)
+	return ctx.DeserializeToValues(rawValues)
 }
 func (ctx *HashKey[k, v]) HLen() (length int64, err error) {
 	cmd := ctx.Rds.HLen(ctx.Context, ctx.Key)
@@ -270,7 +267,7 @@ func (ctx *HashKey[k, v]) HVals() ([]v, error) {
 	}
 	values := make([]v, len(result))
 	for i, v := range result {
-		value, err := ctx.DeserializeValue([]byte(v))
+		value, err := ctx.DeserializeToValue([]byte(v))
 		if err != nil {
 			continue
 		}
@@ -319,7 +316,7 @@ func (ctx *HashKey[k, v]) HScan(cursor uint64, match string, count int64) (keys 
 	keyValueStrs, cursorRet, err = cmd.Result()
 	for i := 0; i < len(keyValueStrs); i += 2 {
 		k, err := ctx.toKey([]byte(keyValueStrs[i]))
-		v, err1 := ctx.DeserializeValue([]byte(keyValueStrs[i+1]))
+		v, err1 := ctx.DeserializeToValue([]byte(keyValueStrs[i+1]))
 		if err != nil || err1 != nil {
 			continue
 		}

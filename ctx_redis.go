@@ -22,8 +22,8 @@ type RedisKey[k comparable, v any] struct {
 
 	SerializeKey         func(value interface{}) (msgpack string, err error)
 	SerializeValue       func(value interface{}) (msgpack string, err error)
-	DeserializeValue     func(msgpack []byte) (value v, err error)
-	DeserializeValues    func(msgpacks []string) (values []v, err error)
+	DeserializeToValue   func(msgpack []byte) (value v, err error)
+	DeserializeToValues  func(msgpacks []string) (values []v, err error)
 	timestampFiller      func(in v) error
 	Validator            func(in v) error
 	UseModer             bool
@@ -40,15 +40,22 @@ func (ctx *RedisKey[k, v]) V(value v) (ret v) {
 
 func (ctx *RedisKey[k, v]) Duplicate(newKey, RdsSourceName string) (newCtx RedisKey[k, v]) {
 	return RedisKey[k, v]{ctx.Context, RdsSourceName, ctx.Rds, newKey, ctx.KeyType,
-		ctx.SerializeKey, ctx.SerializeValue, ctx.DeserializeValue, ctx.DeserializeValues, ctx.timestampFiller, ctx.Validator,
+		ctx.SerializeKey, ctx.SerializeValue, ctx.DeserializeToValue, ctx.DeserializeToValues, ctx.timestampFiller, ctx.Validator,
 		ctx.UseModer, ctx.PrimaryKeyFieldIndex}
+}
+
+func (ctx *RedisKey[k, v]) CloneToRedisKey(newKey, RdsSourceName string) (newCtx *RedisKey[string, interface{}]) {
+	newCtx = &RedisKey[string, interface{}]{ctx.Context, RdsSourceName, ctx.Rds, newKey, ctx.KeyType,
+		ctx.SerializeKey, ctx.SerializeValue, ctx.DeserializeToInterface, ctx.DeserializeToInterfaceSlice, ctx.TimestampFiller, ctx.Validate,
+		ctx.UseModer, ctx.PrimaryKeyFieldIndex}
+	return newCtx
 }
 func (ctx *RedisKey[k, v]) InitFunc() {
 	ctx.Context = context.Background()
 	ctx.SerializeKey = ctx.getSerializeFun(reflect.TypeOf((*k)(nil)).Elem().Kind())
 	ctx.SerializeValue = ctx.getSerializeFun(reflect.TypeOf((*v)(nil)).Elem().Kind())
-	ctx.DeserializeValue = ctx.getDeserializetoValueFunc()
-	ctx.DeserializeValues = ctx.toValuesFunc()
+	ctx.DeserializeToValue = ctx.getDeserializetoValueFunc()
+	ctx.DeserializeToValues = ctx.toValuesFunc()
 	ctx.timestampFiller = ctx.NewTimestampFiller()
 	ctx.Validator = ctx.NewValidator()
 }
@@ -196,7 +203,7 @@ func (ctx *RedisKey[k, v]) toKeyValueStrs(keyValue ...interface{}) (keyValStrs [
 	}
 	return keyValStrs, nil
 }
-func (ctx *RedisKey[k, v]) UnmarshalValue(msgpackBytes []byte) (rets interface{}, err error) {
+func (ctx *RedisKey[k, v]) DeserializeToInterface(msgpackBytes []byte) (rets interface{}, err error) {
 
 	if len(msgpackBytes) == 0 {
 		return nil, fmt.Errorf("msgpackBytes is empty")
@@ -208,12 +215,54 @@ func (ctx *RedisKey[k, v]) UnmarshalValue(msgpackBytes []byte) (rets interface{}
 	}
 
 	// auto fill field UpdateAt and CreateAt
-	err = ctx.TimestampFill(vInstance)
+	err = ctx.TimestampFiller(vInstance)
 	if err == nil {
 		err = ctx.Validate(vInstance)
 	}
 
 	return vInstance, err
+}
+func (ctx *RedisKey[k, v]) DeserializeToInterfaceSlice(msgpacks []string) (rets []interface{}, err error) {
+	// Return early if input is empty
+	if len(msgpacks) == 0 {
+		return make([]interface{}, 0), nil
+	}
+
+	// Pre-allocate slice to avoid resizing overhead
+	rets = make([]interface{}, 0, len(msgpacks))
+
+	for _, mp := range msgpacks {
+		mpBytes := []byte(mp)
+
+		// Strict check matching UnmarshalValue: empty bytes are considered an error
+		if len(mpBytes) == 0 {
+			return nil, fmt.Errorf("msgpackBytes is empty")
+		}
+
+		var vInstance v
+		if err = msgpack.Unmarshal(mpBytes, &vInstance); err != nil {
+			return nil, err
+		}
+
+		// Apply Timestamp Filler if configured
+		// Note: Using the struct field directly to ensure compatibility
+		if ctx.timestampFiller != nil {
+			if err = ctx.timestampFiller(vInstance); err != nil {
+				return nil, err
+			}
+		}
+
+		// Apply Validator if configured
+		if ctx.Validator != nil {
+			if err = ctx.Validator(vInstance); err != nil {
+				return nil, err
+			}
+		}
+
+		rets = append(rets, vInstance)
+	}
+
+	return rets, nil
 }
 
 func (ctx *RedisKey[k, v]) MsgpackUnmarshalKeyValues(msgpack []byte) (rets interface{}, err error) {

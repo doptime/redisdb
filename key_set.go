@@ -18,9 +18,6 @@ func NewSetKey[k comparable, v any](ops ...Option) *SetKey[k, v] {
 func (ctx *SetKey[k, v]) ConcatKey(fields ...interface{}) *SetKey[k, v] {
 	return &SetKey[k, v]{ctx.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
 }
-func (ctx *SetKey[k, v]) Clone(newKey, RdsSourceName string) (newCtx CtxInterface) {
-	return &SetKey[k, v]{ctx.Duplicate(newKey, RdsSourceName)}
-}
 func (ctx *SetKey[k, v]) HttpOn(op SetOp) (ctx1 *SetKey[k, v]) {
 	HttpPermissions.Set(KeyScope(ctx.Key), uint64(op))
 	// don't register web data if it fully prepared
@@ -64,7 +61,7 @@ func (ctx *SetKey[k, v]) SMembers() ([]v, error) {
 	if err := cmd.Err(); err != nil {
 		return nil, err
 	}
-	return ctx.DeserializeValues(cmd.Val())
+	return ctx.DeserializeToValues(cmd.Val())
 }
 func (ctx *SetKey[k, v]) SScan(cursor uint64, match string, count int64) ([]v, uint64, error) {
 	cmd := ctx.Rds.SScan(ctx.Context, ctx.Key, cursor, match, count)
@@ -75,7 +72,7 @@ func (ctx *SetKey[k, v]) SScan(cursor uint64, match string, count int64) ([]v, u
 	if err != nil {
 		return nil, 0, err
 	}
-	values, err := ctx.DeserializeValues(Strs)
+	values, err := ctx.DeserializeToValues(Strs)
 	if err != nil {
 		return nil, 0, err
 	}

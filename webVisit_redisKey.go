@@ -10,9 +10,10 @@ import (
 type CtxInterface interface {
 	GetUseModer() bool
 	ValidDataKey() error
-	UnmarshalValue(msgpack []byte) (rets interface{}, err error)
-	TimestampFill(in interface{}) (err error)
-	Clone(newKey, RdsSourceName string) (newCtx CtxInterface)
+	DeserializeToInterface(msgpack []byte) (rets interface{}, err error)
+	DeserializeToInterfaceSlice(msgpacks []string) (rets []interface{}, err error)
+	TimestampFiller(in interface{}) (err error)
+	CloneToRedisKey(newKey, RdsSourceName string) (newCtx *RedisKey[string, interface{}])
 }
 
 var RediskeyForWeb cmap.ConcurrentMap[string, CtxInterface] = cmap.New[CtxInterface]()
