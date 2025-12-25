@@ -8,6 +8,7 @@ import (
 )
 
 type CtxInterface interface {
+	GetKeyType() KeyType
 	GetUseModer() bool
 	ValidDataKey() error
 	DeserializeToInterface(msgpack []byte) (rets interface{}, err error)

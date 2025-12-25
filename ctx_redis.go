@@ -30,6 +30,9 @@ type RedisKey[k comparable, v any] struct {
 	PrimaryKeyFieldIndex int
 }
 
+func (ctx *RedisKey[k, v]) GetKeyType() KeyType {
+	return ctx.KeyType
+}
 func (ctx *RedisKey[k, v]) V(value v) (ret v) {
 	ret = value
 	if ctx.UseModer {
