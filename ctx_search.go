@@ -18,7 +18,7 @@ type SearchKey[k comparable, v any] struct {
 // NewSearchKey 创建一个支持 RediSearch 的 Key Context
 func NewSearchKey[k comparable, v any](indexName string, ops ...Option) *SearchKey[k, v] {
 	// 强制使用 HashKey 类型，因为 RediSearch 主要基于 Hash
-	ops = append(ops, Option{KeyType: keyTypeHashKey})
+	ops = append(ops, Option{KeyType: KeyTypeHash})
 
 	// 初始化基础 HashKey
 	baseKey := NewHashKey[k, v](ops...)

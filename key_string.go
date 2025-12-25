@@ -12,8 +12,8 @@ type StringKey[k comparable, v any] struct {
 }
 
 func NewStringKey[k comparable, v any](ops ...Option) *StringKey[k, v] {
-	ctx := &StringKey[k, v]{RedisKey: RedisKey[k, v]{KeyType: keyTypeStringKey}}
-	if err := ctx.applyOptionsAndCheck(keyTypeStringKey, ops...); err != nil {
+	ctx := &StringKey[k, v]{RedisKey: RedisKey[k, v]{KeyType: KeyTypeString}}
+	if err := ctx.applyOptionsAndCheck(KeyTypeString, ops...); err != nil {
 		logger.Error().Err(err).Msg("redisdb.NewStringKey failed")
 		return nil
 	}

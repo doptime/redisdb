@@ -9,8 +9,8 @@ type StreamKey[k comparable, v any] struct {
 }
 
 func NewStreamKey[k comparable, v any](ops ...Option) *StreamKey[k, v] {
-	ctx := &StreamKey[k, v]{RedisKey: RedisKey[k, v]{KeyType: keyTypeStreamKey}}
-	if err := ctx.applyOptionsAndCheck(keyTypeStreamKey, ops...); err != nil {
+	ctx := &StreamKey[k, v]{RedisKey: RedisKey[k, v]{KeyType: KeyTypeStream}}
+	if err := ctx.applyOptionsAndCheck(KeyTypeStream, ops...); err != nil {
 		logger.Error().Err(err).Msg("redisdb.NewStreamKey failed")
 		return nil
 	}

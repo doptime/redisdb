@@ -65,7 +65,7 @@ func (ctx *RedisKey[k, v]) InitFunc() {
 
 func NewRedisKey[k comparable, v any](ops ...Option) *RedisKey[k, v] {
 	ctx := &RedisKey[k, v]{}
-	if err := ctx.applyOptionsAndCheck(keyTypeNonKey, ops...); err != nil {
+	if err := ctx.applyOptionsAndCheck(KeyTypeNon, ops...); err != nil {
 		logger.Error().Err(err).Msg("redisdb.NewRedisKey failed")
 		return nil
 	}
@@ -107,19 +107,19 @@ func (ctx *RedisKey[k, v]) Scan(cursorOld uint64, match string, count int64) (ke
 type KeyType string
 
 const (
-	keyTypeNonKey       KeyType = "nonkey"
-	keyTypeStringKey    KeyType = "string"
-	keyTypeHashKey      KeyType = "hash"
-	keyTypeListKey      KeyType = "list"
-	keyTypeSetKey       KeyType = "set"
-	keyTypeZSetKey      KeyType = "zset"
-	keyTypeStreamKey    KeyType = "stream"
-	keyTypeVectorSetKey KeyType = "vset"
+	KeyTypeNon       KeyType = "nonkey"
+	KeyTypeString    KeyType = "string"
+	KeyTypeHash      KeyType = "hash"
+	KeyTypeList      KeyType = "list"
+	KeyTypeSet       KeyType = "set"
+	KeyTypeZSet      KeyType = "zset"
+	KeyTypeStream    KeyType = "stream"
+	KeyTypeVectorSet KeyType = "vset"
 )
 
 func IsValidKeyType(keyType string) bool {
 	switch keyType {
-	case string(keyTypeNonKey), string(keyTypeStringKey), string(keyTypeHashKey), string(keyTypeListKey), string(keyTypeSetKey), string(keyTypeZSetKey), string(keyTypeStreamKey):
+	case string(KeyTypeNon), string(KeyTypeString), string(KeyTypeHash), string(KeyTypeList), string(KeyTypeSet), string(KeyTypeZSet), string(KeyTypeStream):
 		return true
 	default:
 		return false

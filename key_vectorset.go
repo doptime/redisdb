@@ -22,8 +22,8 @@ type VectorSetKey[k comparable, v any] struct {
 }
 
 func NewVectorSetKey[k comparable, v any](ops ...Option) *VectorSetKey[k, v] {
-	ctx := &VectorSetKey[k, v]{RedisKey: RedisKey[k, v]{KeyType: keyTypeVectorSetKey}}
-	if err := ctx.applyOptionsAndCheck(keyTypeVectorSetKey, ops...); err != nil {
+	ctx := &VectorSetKey[k, v]{RedisKey: RedisKey[k, v]{KeyType: KeyTypeVectorSet}}
+	if err := ctx.applyOptionsAndCheck(KeyTypeVectorSet, ops...); err != nil {
 		logger.Error().Err(err).Msg("redisdb.NewVectorSetKey failed")
 		return nil
 	}

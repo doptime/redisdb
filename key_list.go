@@ -12,8 +12,8 @@ type ListKey[v any] struct {
 }
 
 func NewListKey[v any](ops ...Option) *ListKey[v] {
-	ctx := &ListKey[v]{RedisKey: RedisKey[string, v]{KeyType: keyTypeListKey}}
-	if err := ctx.applyOptionsAndCheck(keyTypeListKey, ops...); err != nil {
+	ctx := &ListKey[v]{RedisKey: RedisKey[string, v]{KeyType: KeyTypeList}}
+	if err := ctx.applyOptionsAndCheck(KeyTypeList, ops...); err != nil {
 		logger.Error().Err(err).Msg("redisdb.NewListKey failed")
 		return nil
 	}

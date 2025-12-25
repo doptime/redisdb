@@ -7,8 +7,8 @@ type SetKey[k comparable, v any] struct {
 }
 
 func NewSetKey[k comparable, v any](ops ...Option) *SetKey[k, v] {
-	ctx := &SetKey[k, v]{RedisKey: RedisKey[k, v]{KeyType: keyTypeSetKey}}
-	if err := ctx.applyOptionsAndCheck(keyTypeSetKey, ops...); err != nil {
+	ctx := &SetKey[k, v]{RedisKey: RedisKey[k, v]{KeyType: KeyTypeSet}}
+	if err := ctx.applyOptionsAndCheck(KeyTypeSet, ops...); err != nil {
 		logger.Error().Err(err).Msg("redisdb.NewSetKey failed")
 		return nil
 	}
