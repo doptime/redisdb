@@ -235,15 +235,13 @@ func (ctx *RedisKey[k, v]) DeserializeToInterfaceSlice(msgpacks []string) (rets 
 	rets = make([]interface{}, 0, len(msgpacks))
 
 	for _, mp := range msgpacks {
-		mpBytes := []byte(mp)
-
 		// Strict check matching UnmarshalValue: empty bytes are considered an error
-		if len(mpBytes) == 0 {
+		if len(mp) == 0 {
 			return nil, fmt.Errorf("msgpackBytes is empty")
 		}
 
 		var vInstance v
-		if err = msgpack.Unmarshal(mpBytes, &vInstance); err != nil {
+		if err = msgpack.Unmarshal([]byte(mp), &vInstance); err != nil {
 			return nil, err
 		}
 
