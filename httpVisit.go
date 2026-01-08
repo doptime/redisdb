@@ -3,6 +3,7 @@ package redisdb
 import (
 	"strings"
 
+	"github.com/doptime/logger"
 	cmap "github.com/orcaman/concurrent-map/v2"
 )
 
@@ -188,46 +189,50 @@ const (
 var HttpPermissions = cmap.New[uint64]()
 
 // 底层校验：检查 Key 的掩码是否包含该操作位
-func isAllowed(key string, op uint64) bool {
-	mask, ok := HttpPermissions.Get(KeyScope(key))
+func isHttpOpAllowed(key string, op uint64) bool {
+	scope := strings.ToLower(KeyScope(key))
+	mask, ok := HttpPermissions.Get(scope)
 	return ok && (mask&op) != 0
 }
 
 // --- 暴露给 API 层的校验接口 ---
 
-func IsAllowedHashOp(key string, op HashOp) bool           { return isAllowed(key, uint64(op)) }
-func IsAllowedListOp(key string, op ListOp) bool           { return isAllowed(key, uint64(op)) }
-func IsAllowedSetOp(key string, op SetOp) bool             { return isAllowed(key, uint64(op)) }
-func IsAllowedZSetOp(key string, op ZSetOp) bool           { return isAllowed(key, uint64(op)) }
-func IsAllowedStringOp(key string, op StringOp) bool       { return isAllowed(key, uint64(op)) }
-func IsAllowedStreamOp(key string, op StreamOp) bool       { return isAllowed(key, uint64(op)) }
-func IsAllowedVectorSetOp(key string, op VectorSetOp) bool { return isAllowed(key, uint64(op)) }
+func IsAllowedHashOp(key string, op HashOp) bool           { return isHttpOpAllowed(key, uint64(op)) }
+func IsAllowedListOp(key string, op ListOp) bool           { return isHttpOpAllowed(key, uint64(op)) }
+func IsAllowedSetOp(key string, op SetOp) bool             { return isHttpOpAllowed(key, uint64(op)) }
+func IsAllowedZSetOp(key string, op ZSetOp) bool           { return isHttpOpAllowed(key, uint64(op)) }
+func IsAllowedStringOp(key string, op StringOp) bool       { return isHttpOpAllowed(key, uint64(op)) }
+func IsAllowedStreamOp(key string, op StreamOp) bool       { return isHttpOpAllowed(key, uint64(op)) }
+func IsAllowedVectorSetOp(key string, op VectorSetOp) bool { return isHttpOpAllowed(key, uint64(op)) }
 
 // 通用生命周期校验 (如 DEL, EXPIRE 直接调用)
 // op 传入无类型常量 (如 redisdb.Del)
-func IsAllowedCommon(key string, op uint64) bool { return isAllowed(key, op) }
+func IsAllowedCommon(key string, op uint64) bool { return isHttpOpAllowed(key, op) }
 
 // 全局 DB 校验 (强制检查 _systemdb 键)
-func IsAllowedDBOp(op DBOp) bool { return isAllowed(SystemDbKey, uint64(op)) }
+func IsAllowedDBOp(op DBOp) bool { return isHttpOpAllowed(SystemDbKey, uint64(op)) }
 
 // --- 权限设置接口 ---
 
-func allow(key string, op uint64) {
-	scope := KeyScope(key)
-	mask, _ := HttpPermissions.Get(scope)
+func httpAllow(key string, op uint64) {
+	scope := strings.ToLower(KeyScope(key))
+	mask, exists := HttpPermissions.Get(scope)
+	if exists {
+		logger.Warn().Str("key", key).Msgf("overwriting existing HttpPermission mask 0x%X with 0x%X", mask, mask|op)
+	}
 	HttpPermissions.Set(scope, mask|op)
 }
 
-func AllowHashOp(key string, op uint64)      { allow(key, op) }
-func AllowListOp(key string, op uint64)      { allow(key, op) }
-func AllowSetOp(key string, op uint64)       { allow(key, op) }
-func AllowZSetOp(key string, op uint64)      { allow(key, op) }
-func AllowStringOp(key string, op uint64)    { allow(key, op) }
-func AllowStreamOp(key string, op uint64)    { allow(key, op) }
-func AllowVectorSetOp(key string, op uint64) { allow(key, op) }
+func AllowHashOp(key string, op uint64)      { httpAllow(key, op) }
+func AllowListOp(key string, op uint64)      { httpAllow(key, op) }
+func AllowSetOp(key string, op uint64)       { httpAllow(key, op) }
+func AllowZSetOp(key string, op uint64)      { httpAllow(key, op) }
+func AllowStringOp(key string, op uint64)    { httpAllow(key, op) }
+func AllowStreamOp(key string, op uint64)    { httpAllow(key, op) }
+func AllowVectorSetOp(key string, op uint64) { httpAllow(key, op) }
 
 // AllowDBOp 设置全局系统权限
-func AllowDBOp(op DBOp) { allow(SystemDbKey, uint64(op)) }
+func AllowDBOp(op DBOp) { httpAllow(SystemDbKey, uint64(op)) }
 
 // scope of a redis key (prefix before ':')
 func KeyScope(key string) string {

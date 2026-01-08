@@ -21,7 +21,7 @@ func NewListKey[v any](ops ...Option) *ListKey[v] {
 	return ctx
 }
 func (ctx *ListKey[v]) HttpOn(op ListOp) (ctx1 *ListKey[v]) {
-	HttpPermissions.Set(KeyScope(ctx.Key), uint64(op))
+	httpAllow(ctx.Key, uint64(op))
 	// don't register web data if it fully prepared
 	if op != 0 && ctx.Key != "" {
 		ctx.RegisterWebData()

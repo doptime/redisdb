@@ -26,7 +26,7 @@ func (ctx *StringKey[k, v]) ConcatKey(fields ...interface{}) *StringKey[k, v] {
 }
 
 func (ctx *StringKey[k, v]) HttpOn(op StringOp) (ctx1 *StringKey[k, v]) {
-	HttpPermissions.Set(KeyScope(ctx.Key), uint64(op))
+	httpAllow(ctx.Key, uint64(op))
 	// don't register web data if it fully prepared
 	if op != 0 && ctx.Key != "" {
 		ctx.RegisterWebData()
