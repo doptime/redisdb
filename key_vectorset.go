@@ -38,8 +38,8 @@ func (ctx *VectorSetKey[k, v]) ConcatKey(fields ...interface{}) *VectorSetKey[k,
 func (ctx *VectorSetKey[k, v]) HttpOn(op VectorSetOp) *VectorSetKey[k, v] {
 	httpAllow(ctx.Key, uint64(op))
 	if op != 0 && ctx.Key != "" {
-		ctx.RegisterWebData()
-		RediskeyForWeb.Set(ctx.Key+":"+ctx.RdsName, ctx)
+		ctx.RegisterWebDataSchemaDocForWebVisit()
+		ctx.RegisterKeyInterfaceForWebVisit()
 	}
 	return ctx
 }

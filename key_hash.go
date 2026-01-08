@@ -65,10 +65,10 @@ func (ctx *HashKey[k, v]) ConcatKey(fields ...interface{}) *HashKey[k, v] {
 	return &HashKey[k, v]{ctx.Duplicate(ConcatedKeys(ctx.Key, fields...), ctx.RdsName)}
 }
 func (ctx *HashKey[k, v]) HttpOn(op HashOp) (ctx1 *HashKey[k, v]) {
-	httpAllow(ctx.Key, uint64(op))
 	if op != 0 && ctx.Key != "" {
-		ctx.RegisterWebData()
-		RediskeyForWeb.Set(ctx.Key+":"+ctx.RdsName, ctx)
+		httpAllow(ctx.Key, uint64(op))
+		ctx.RegisterWebDataSchemaDocForWebVisit()
+		ctx.RegisterKeyInterfaceForWebVisit()
 	}
 	return ctx
 }

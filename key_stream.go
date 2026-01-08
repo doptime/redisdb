@@ -26,8 +26,8 @@ func (ctx *StreamKey[k, v]) HttpOn(op StreamOp) (ctx1 *StreamKey[k, v]) {
 	httpAllow(ctx.Key, uint64(op))
 	// don't register web data if it fully prepared
 	if op != 0 && ctx.Key != "" {
-		ctx.RegisterWebData()
-		RediskeyForWeb.Set(ctx.Key+":"+ctx.RdsName, ctx)
+		ctx.RegisterWebDataSchemaDocForWebVisit()
+		ctx.RegisterKeyInterfaceForWebVisit()
 	}
 	return ctx
 }

@@ -22,8 +22,8 @@ func (ctx *SetKey[k, v]) HttpOn(op SetOp) (ctx1 *SetKey[k, v]) {
 	httpAllow(ctx.Key, uint64(op))
 	// don't register web data if it fully prepared
 	if op != 0 && ctx.Key != "" {
-		ctx.RegisterWebData()
-		RediskeyForWeb.Set(ctx.Key+":"+ctx.RdsName, ctx)
+		ctx.RegisterWebDataSchemaDocForWebVisit()
+		ctx.RegisterKeyInterfaceForWebVisit()
 	}
 	return ctx
 }
