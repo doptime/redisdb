@@ -17,7 +17,7 @@ type CtxInterface interface {
 	CloneToRedisKey(newKey, RdsSourceName string) (newCtx *RedisKey[string, interface{}])
 }
 
-var rediskeyInterfaceForWebVisit cmap.ConcurrentMap[string, CtxInterface] = cmap.New[CtxInterface]()
+var RediskeyInterfaceForWebVisit cmap.ConcurrentMap[string, CtxInterface] = cmap.New[CtxInterface]()
 
 func (ctx *RedisKey[k, v]) ValidDataKey() error {
 	_keyscope := KeyScope(ctx.Key)
