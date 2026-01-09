@@ -199,6 +199,30 @@ func (ctx *HashKey[k, v]) HRandField(count int) (fields []k, err error) {
 	}
 	return ctx.toKeys(cmd.Val())
 }
+func (ctx *HashKey[k, v]) HRandFieldWithValues(count int) (fields []k, values []v, err error) {
+	var (
+		cmd *redis.KeyValueSliceCmd
+	)
+	if cmd = ctx.Rds.HRandFieldWithValues(ctx.Context, ctx.Key, count); cmd.Err() != nil {
+		return nil, nil, cmd.Err()
+	}
+	strs := cmd.Val()
+	fields = make([]k, 0, len(strs)/2)
+	values = make([]v, 0, len(strs)/2)
+	for i := 0; i < len(strs); i += 2 {
+		key, err := ctx.toKey([]byte(strs[i].Key))
+		if err != nil {
+			continue
+		}
+		value, err := ctx.DeserializeToValue([]byte(strs[i].Value))
+		if err != nil {
+			continue
+		}
+		fields = append(fields, key)
+		values = append(values, value)
+	}
+	return fields, values, nil
+}
 func (ctx *HashKey[k, v]) HMGET(fields ...interface{}) (values []v, err error) {
 	var (
 		cmd          *redis.SliceCmd

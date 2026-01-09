@@ -15,6 +15,8 @@ type IHttpHashKey interface {
 	HMGET(fields ...interface{}) (vals []interface{}, err error)
 	HKeys() (keys []string, err error)
 	HExists(field string) (exists bool, err error)
+	HRandField(count int) (keys []string, err error)
+	HRandFieldWithValues(count int) (keyvalueMap map[string]interface{}, err error)
 }
 
 var HttpHashKeyMap cmap.ConcurrentMap[string, IHttpHashKey] = cmap.New[IHttpHashKey]()
@@ -133,4 +135,35 @@ func (ctx *HttpHashKey[k, v]) HExists(field string) (exists bool, err error) {
 		return false, err
 	}
 	return hkey.HExists(key)
+}
+func (ctx *HttpHashKey[k, v]) HRandField(count int) (keys []string, err error) {
+	hkey := (*HashKey[k, v])(ctx)
+	var keysRet []k
+	keysRet, err = hkey.HRandField(count)
+	if err != nil {
+		return nil, err
+	}
+	for _, key := range keysRet {
+		keys = append(keys, fmt.Sprintf("%v", key))
+	}
+	return
+}
+
+func (ctx *HttpHashKey[k, v]) HRandFieldWithValues(count int) (keyvalueMap map[string]interface{}, err error) {
+	hkey := (*HashKey[k, v])(ctx)
+	var keysRet []k
+	var valuesRet []v
+	keysRet, valuesRet, err = hkey.HRandFieldWithValues(count)
+	if err != nil {
+		return nil, err
+	}
+	keyvalueMap = make(map[string]interface{})
+	if len(keysRet) != len(valuesRet) {
+		return nil, fmt.Errorf("mismatched keys and values length")
+	}
+
+	for i, key := range keysRet {
+		keyvalueMap[fmt.Sprintf("%v", key)] = valuesRet[i]
+	}
+	return keyvalueMap, nil
 }
