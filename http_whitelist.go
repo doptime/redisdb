@@ -44,6 +44,7 @@ const (
 	HExists
 	HGetAll
 	HRandField
+	HRandFieldWithValues
 	HLen
 	HKeys
 	HVals
@@ -52,7 +53,7 @@ const (
 	HSetNX
 	HScan
 
-	HashRead  = uint64(HGet|HMGET|HExists|HGetAll|HRandField|HLen|HKeys|HVals|HScan) | CommonRead
+	HashRead  = uint64(HGet|HMGET|HExists|HGetAll|HRandField|HRandFieldWithValues|HLen|HKeys|HVals|HScan) | CommonRead
 	HashWrite = uint64(HSet|HDel|HIncrBy|HIncrByFloat|HSetNX) | CommonWrite
 	HashAll   = HashRead | HashWrite
 )
