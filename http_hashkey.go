@@ -14,6 +14,7 @@ type IHttpHashKey interface {
 	DeserializeValues(msgpacks []string) (rets []interface{}, err error)
 	TimestampFiller(in interface{}) (err error)
 
+	HScanNoValues(cursor uint64, match string, count int64) (keys []string, cursorRet uint64, err error)
 	// HGet(field string) (interface{}, error)
 	// HGetAll() (map[string]interface{}, error)
 	// HSet(field string, val interface{}) (int64, error)
@@ -36,4 +37,17 @@ func GetHttpHashKey(Key string, rdsName string) (IHttpHashKey, error) {
 		return nil, fmt.Errorf("key schema not found")
 	}
 	return ikey, nil
+}
+func (ctx *HttpHashKey[k, v]) HScanNoValues(cursor uint64, match string, count int64) (keys []string, cursorRet uint64, err error) {
+	var (
+		keysRet []k
+	)
+	keysRet, cursorRet, err = (*HashKey[k, v])(ctx).HScanNoValues(cursor, match, count)
+	if err != nil {
+		return
+	}
+	for _, key := range keysRet {
+		keys = append(keys, fmt.Sprintf("%v", key))
+	}
+	return
 }
