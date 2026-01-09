@@ -52,15 +52,6 @@ func (ctx *HttpListKey[v]) DeserializeValues(msgpacks []string) (rets []interfac
 	return ctx.DeserializeToInterfaceSlice(msgpacks)
 }
 
-func GetHttpListKey(Key string, rdsName string) (IHttpListKey, error) {
-	_keyscope := KeyScope(Key)
-	ikey, ok := HttpListKeyMap.Get(_keyscope + ":" + rdsName)
-	if !ok {
-		return nil, fmt.Errorf("key schema not found")
-	}
-	return ikey, nil
-}
-
 func (ctx *HttpListKey[v]) LRange(start int64, stop int64) (rets []interface{}, err error) {
 	var values []v
 	values, err = (*ListKey[v])(ctx).LRange(start, stop)
@@ -151,4 +142,13 @@ func (ctx *HttpListKey[v]) LPushX(val interface{}) (err error) {
 		return fmt.Errorf("type assertion failed in LPushX")
 	}
 	return (*ListKey[v])(ctx).LPushX(vval)
+}
+
+func GetHttpListKey(Key string, rdsName string) (IHttpListKey, error) {
+	_keyscope := KeyScope(Key)
+	ikey, ok := HttpListKeyMap.Get(_keyscope + ":" + rdsName)
+	if !ok {
+		return nil, fmt.Errorf("key schema not found")
+	}
+	return ikey, nil
 }

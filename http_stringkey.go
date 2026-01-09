@@ -43,14 +43,6 @@ func (ctx *HttpStringKey[k, v]) DeserializeValues(msgpacks []string) (rets []int
 	return ctx.DeserializeToInterfaceSlice(msgpacks)
 }
 
-func GetHttpStringKey(Key string, rdsName string) (IHttpStringKey, error) {
-	_keyscope := KeyScope(Key)
-	ikey, ok := HttpStringKeyMap.Get(_keyscope + ":" + rdsName)
-	if !ok {
-		return nil, fmt.Errorf("key schema not found")
-	}
-	return ikey, nil
-}
 func (ctx *HttpStringKey[k, v]) Set(field string, val interface{}, expiration time.Duration) (err error) {
 	var key k
 	key, err = ctx.toKey([]byte(field))
@@ -71,4 +63,13 @@ func (ctx *HttpStringKey[k, v]) Get(field string) (val interface{}, err error) {
 		return nil, err
 	}
 	return (*StringKey[k, v])(ctx).Get(key)
+}
+
+func GetHttpStringKey(Key string, rdsName string) (IHttpStringKey, error) {
+	_keyscope := KeyScope(Key)
+	ikey, ok := HttpStringKeyMap.Get(_keyscope + ":" + rdsName)
+	if !ok {
+		return nil, fmt.Errorf("key schema not found")
+	}
+	return ikey, nil
 }

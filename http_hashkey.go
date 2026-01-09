@@ -14,6 +14,8 @@ type IHttpHashKey interface {
 	DeserializeValues(msgpacks []string) (rets []interface{}, err error)
 	TimestampFiller(in interface{}) (err error)
 
+	WithContext(key string, RedisDataSource string) IHttpHashKey
+
 	HScanNoValues(cursor uint64, match string, count int64) (keys []string, cursorRet uint64, err error)
 	HScan(cursor uint64, match string, count int64) (keys []string, values []interface{}, cursorRet uint64, err error)
 	HGet(field string) (interface{}, error)
@@ -50,14 +52,19 @@ func (ctx *HttpHashKey[k, v]) DeserializeValue(msgpack []byte) (rets interface{}
 func (ctx *HttpHashKey[k, v]) DeserializeValues(msgpacks []string) (rets []interface{}, err error) {
 	return ctx.DeserializeToInterfaceSlice(msgpacks)
 }
-func GetHttpHashKey(Key string, rdsName string) (IHttpHashKey, error) {
-	_keyscope := KeyScope(Key)
-	ikey, ok := HttpHashKeyMap.Get(_keyscope + ":" + rdsName)
-	if !ok {
-		return nil, fmt.Errorf("key schema not found")
-	}
-	return ikey, nil
+
+func (ctx *HttpHashKey[k, v]) native() *HashKey[k, v] {
+	return (*HashKey[k, v])(ctx)
 }
+
+// WithContext 实现：克隆自己，修改 Key 和 DS，返回接口
+func (ctx *HttpHashKey[k, v]) WithContext(key string, RedisDataSource string) IHttpHashKey {
+	// 1. 获取原始对象的副本 (浅拷贝结构体)
+	newObj := ctx.native().Duplicate(key, RedisDataSource)
+	newCtx := HttpHashKey[k, v]{RedisKey: newObj}
+	return &newCtx
+}
+
 func (ctx *HttpHashKey[k, v]) HScanNoValues(cursor uint64, match string, count int64) (keys []string, cursorRet uint64, err error) {
 	var (
 		keysRet []k
@@ -199,4 +206,13 @@ func (ctx *HttpHashKey[k, v]) HRandFieldWithValues(count int) (keyvalueMap map[s
 		keyvalueMap[fmt.Sprintf("%v", key)] = valuesRet[i]
 	}
 	return keyvalueMap, nil
+}
+
+func GetHttpHashKey(Key string, rdsName string) (IHttpHashKey, error) {
+	_keyscope := KeyScope(Key)
+	ikey, ok := HttpHashKeyMap.Get(_keyscope + ":" + rdsName)
+	if !ok {
+		return nil, fmt.Errorf("key schema not found")
+	}
+	return ikey.WithContext(Key, rdsName), nil
 }
