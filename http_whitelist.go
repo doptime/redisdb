@@ -65,6 +65,7 @@ const (
 	RPush ListOp = 1 << (10 + iota)
 	RPushX
 	LPush
+	LPushX
 	RPop
 	LPop
 	LRange
@@ -75,7 +76,7 @@ const (
 	LLen
 
 	ListRead  = uint64(LRange|LIndex|LLen) | CommonRead
-	ListWrite = uint64(RPush|RPushX|LPush|RPop|LPop|LRem|LSet|LTrim) | CommonWrite
+	ListWrite = uint64(RPush|RPushX|LPush|LPushX|RPop|LPop|LRem|LSet|LTrim) | CommonWrite
 	ListAll   = ListRead | ListWrite
 )
 
