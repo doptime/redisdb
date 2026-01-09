@@ -48,13 +48,6 @@ func (ctx *ListKey[v]) RPush(param ...v) error {
 	}
 	return ctx.Rds.RPush(ctx.Context, ctx.Key, vals...).Err()
 }
-func (ctx *ListKey[v]) RPushX(param ...v) error {
-	vals, err := ctx.toValueStrsSlice(param...)
-	if err != nil {
-		return err
-	}
-	return ctx.Rds.RPushX(ctx.Context, ctx.Key, vals...).Err()
-}
 
 func (ctx *ListKey[v]) LPush(param ...v) error {
 	vals, err := ctx.toValueStrsSlice(param...)
@@ -62,6 +55,21 @@ func (ctx *ListKey[v]) LPush(param ...v) error {
 		return err
 	}
 	return ctx.Rds.LPush(ctx.Context, ctx.Key, vals...).Err()
+}
+
+func (ctx *ListKey[v]) RPushX(param ...v) error {
+	vals, err := ctx.toValueStrsSlice(param...)
+	if err != nil {
+		return err
+	}
+	return ctx.Rds.RPushX(ctx.Context, ctx.Key, vals...).Err()
+}
+func (ctx *ListKey[v]) LPushX(param ...v) error {
+	vals, err := ctx.toValueStrsSlice(param...)
+	if err != nil {
+		return err
+	}
+	return ctx.Rds.LPushX(ctx.Context, ctx.Key, vals...).Err()
 }
 
 func (ctx *ListKey[v]) RPop() (ret v, err error) {

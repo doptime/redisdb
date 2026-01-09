@@ -24,6 +24,8 @@ type IHttpListKey interface {
 	LTrim(start int64, stop int64) (err error)
 	LLen() (ret int64, err error)
 	LSet(index int64, val interface{}) (err error)
+	RPushX(val interface{}) (err error)
+	LPushX(val interface{}) (err error)
 }
 
 var HttpListKeyMap cmap.ConcurrentMap[string, IHttpListKey] = cmap.New[IHttpListKey]()
@@ -135,4 +137,18 @@ func (ctx *HttpListKey[v]) LSet(index int64, val interface{}) (err error) {
 		return fmt.Errorf("type assertion failed in LSet")
 	}
 	return (*ListKey[v])(ctx).LSet(index, vval)
+}
+func (ctx *HttpListKey[v]) RPushX(val interface{}) (err error) {
+	vval, ok := val.(v)
+	if !ok {
+		return fmt.Errorf("type assertion failed in RPushX")
+	}
+	return (*ListKey[v])(ctx).RPushX(vval)
+}
+func (ctx *HttpListKey[v]) LPushX(val interface{}) (err error) {
+	vval, ok := val.(v)
+	if !ok {
+		return fmt.Errorf("type assertion failed in LPushX")
+	}
+	return (*ListKey[v])(ctx).LPushX(vval)
 }
