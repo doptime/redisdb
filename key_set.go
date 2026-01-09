@@ -39,26 +39,38 @@ func (ctx *SetKey[k, v]) RegisterHttpInterface() {
 	HttpSetKeyMap.Set(keyScope+":"+ctx.RdsName, &IHashKey)
 }
 
-// append to Set
-func (ctx *SetKey[k, v]) SAdd(param v) (err error) {
-	valStr, err := ctx.SerializeValue(param)
-	if err != nil {
-		return err
+// SAdd: 支持批量添加
+func (ctx *SetKey[k, v]) SAdd(members ...v) (err error) {
+	// 序列化所有 value
+	vals := make([]interface{}, len(members))
+	for i, m := range members {
+		valStr, err := ctx.SerializeValue(m)
+		if err != nil {
+			return err
+		}
+		vals[i] = valStr
 	}
-	return ctx.Rds.SAdd(ctx.Context, ctx.Key, valStr).Err()
+	// 调用 Redis SAdd (接受 ...interface{})
+	return ctx.Rds.SAdd(ctx.Context, ctx.Key, vals...).Err()
 }
 
 func (ctx *SetKey[k, v]) SCard() (int64, error) {
 	return ctx.Rds.SCard(ctx.Context, ctx.Key).Result()
 }
 
-func (ctx *SetKey[k, v]) SRem(param v) error {
-	valStr, err := ctx.SerializeValue(param)
-	if err != nil {
-		return err
+// SRem: 支持批量删除
+func (ctx *SetKey[k, v]) SRem(members ...v) error {
+	vals := make([]interface{}, len(members))
+	for i, m := range members {
+		valStr, err := ctx.SerializeValue(m)
+		if err != nil {
+			return err
+		}
+		vals[i] = valStr
 	}
-	return ctx.Rds.SRem(ctx.Context, ctx.Key, valStr).Err()
+	return ctx.Rds.SRem(ctx.Context, ctx.Key, vals...).Err()
 }
+
 func (ctx *SetKey[k, v]) SIsMember(param v) (bool, error) {
 	valStr, err := ctx.SerializeValue(param)
 	if err != nil {
@@ -74,6 +86,7 @@ func (ctx *SetKey[k, v]) SMembers() ([]v, error) {
 	}
 	return ctx.DeserializeToValues(cmd.Val())
 }
+
 func (ctx *SetKey[k, v]) SScan(cursor uint64, match string, count int64) ([]v, uint64, error) {
 	cmd := ctx.Rds.SScan(ctx.Context, ctx.Key, cursor, match, count)
 	if err := cmd.Err(); err != nil {

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/doptime/config/cfgredis"
-	cmap "github.com/orcaman/concurrent-map/v2"
 )
 
 type CtxInterface interface {
@@ -15,8 +14,6 @@ type CtxInterface interface {
 	DeserializeToInterfaceSlice(msgpacks []string) (rets []interface{}, err error)
 	TimestampFiller(in interface{}) (err error)
 }
-
-var RediskeyInterfaceForWebVisit cmap.ConcurrentMap[string, CtxInterface] = cmap.New[CtxInterface]()
 
 func (ctx *RedisKey[k, v]) ValidDataKey() error {
 	_keyscope := KeyScope(ctx.Key)

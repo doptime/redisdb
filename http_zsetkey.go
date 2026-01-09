@@ -27,7 +27,7 @@ type IHttpZSetKey interface {
 	ZCard() (int64, error)
 	ZCount(min, max string) (int64, error)
 	ZLexCount(min, max string) (int64, error)
-	ZIncrBy(increment float64, member interface{}) error // member 改为 interface{} 以便通用
+	ZIncrBy(increment float64, member interface{}) (float64, error)
 
 	ZScore(member interface{}) (score float64, err error)
 	ZRank(member interface{}) (rank int64, err error)
@@ -95,23 +95,8 @@ func (ctx *HttpZSetKey[k, v]) ZLexCount(min, max string) (int64, error) {
 	return ctx.native().ZLexCount(min, max)
 }
 
-// ZIncrBy 特殊处理：因为 member 进来是 interface{}，需要转成 v
-// 但因为底层 ZIncrBy 接收 v，而 v 可能是 *Profile。
-// 这里我们做个妥协：底层 key_zset.go 的 ZIncrBy 如果能接受 interface{} 最好，
-// 如果不能，这里需要类型断言。通常 HTTP 传入的 member 已经在 Deserialize 阶段处理过了，
-// 但 ZIncrBy 的 member 通常是从 URL 或 Body 解析的简单值。
-// 为了简化，建议 key_zset.go 的 ZIncrBy 参数改为 member interface{}，或者这里做简单处理。
-// 假设底层 ZIncrBy 的签名是 func (ctx *ZSetKey[k, v]) ZIncrBy(incr float64, member v)
-func (ctx *HttpZSetKey[k, v]) ZIncrBy(increment float64, member interface{}) error {
-	// 这是一个潜在的痛点。如果 v 是 struct，这里传 interface{} 可能会 panic。
-	// 但通常 ZSet 的 member 是 string 或 key。
-	// 如果 v 是 interface{} (泛型擦除后)，直接转。
-	if vVal, ok := member.(v); ok {
-		return ctx.native().ZIncrBy(increment, vVal)
-	}
-	// Fallback: 如果传进来的是 string/bytes，尝试强转 (视具体业务逻辑而定)
-	// 暂时不做处理，让它 panic 或者报错，或者你在 key_zset.go 里修改 ZIncrBy 接受 interface{}
-	return fmt.Errorf("ZIncrBy type mismatch: expected %T, got %T", *new(v), member)
+func (ctx *HttpZSetKey[k, v]) ZIncrBy(increment float64, member interface{}) (float64, error) {
+	return ctx.native().ZIncrBy(increment, member)
 }
 
 func (ctx *HttpZSetKey[k, v]) ZScore(member interface{}) (float64, error) {
