@@ -15,13 +15,13 @@ type IHttpStringKey interface {
 	DeserializeValues(msgpacks []string) (rets []interface{}, err error)
 	TimestampFiller(in interface{}) (err error)
 
-	Set(field string, val interface{}, expiration time.Duration) (int64, error)
+	Set(field string, val interface{}, expiration time.Duration) error
 	Get(field string) (interface{}, error)
 }
 
-var HttpStringKeyMap cmap.ConcurrentMap[string, IHttpStringKey] = cmap.New[IHttpStringKey]()
-
 type HttpStringKey[k comparable, v any] StringKey[k, v]
+
+var HttpStringKeyMap cmap.ConcurrentMap[string, IHttpStringKey] = cmap.New[IHttpStringKey]()
 
 func (ctx *HttpStringKey[k, v]) GetKeyType() KeyType {
 	return (*HashKey[k, v])(ctx).GetKeyType()

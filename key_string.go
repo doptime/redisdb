@@ -38,8 +38,8 @@ func (ctx *StringKey[k, v]) RegisterHttpInterface() {
 	// register the key interface for web access
 	keyScope := strings.ToLower(KeyScope(ctx.Key))
 	hskey := StringKey[k, v]{ctx.Duplicate(ctx.Key, ctx.RdsName)}
-	IHashKey := HttpStringKey[k, v](hskey)
-	HttpStringKeyMap.Set(keyScope+":"+ctx.RdsName, &IHashKey)
+	HttpStringKey := HttpStringKey[k, v](hskey)
+	HttpStringKeyMap.Set(keyScope+":"+ctx.RdsName, &HttpStringKey)
 }
 
 func (ctx *StringKey[k, v]) Get(Field k) (value v, err error) {
