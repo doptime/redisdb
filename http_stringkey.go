@@ -1,6 +1,8 @@
 package redisdb
 
 import (
+	"fmt"
+
 	cmap "github.com/orcaman/concurrent-map/v2"
 )
 
@@ -28,6 +30,11 @@ func (ctx *HttpStringKey[k, v]) DeserializeValues(msgpacks []string) (rets []int
 	return ctx.DeserializeToInterfaceSlice(msgpacks)
 }
 
-func GetHttpStringKey(keyScope string, rdsName string) (IHttpStringKey, bool) {
-	return HttpStringKeyMap.Get(keyScope + ":" + rdsName)
+func GetHttpStringKey(Key string, rdsName string) (IHttpStringKey, error) {
+	_keyscope := KeyScope(Key)
+	ikey, ok := HttpStringKeyMap.Get(_keyscope + ":" + rdsName)
+	if !ok {
+		return nil, fmt.Errorf("key schema not found")
+	}
+	return ikey, nil
 }

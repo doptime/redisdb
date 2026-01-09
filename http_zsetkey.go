@@ -1,6 +1,8 @@
 package redisdb
 
 import (
+	"fmt"
+
 	cmap "github.com/orcaman/concurrent-map/v2"
 )
 
@@ -26,4 +28,13 @@ func (ctx *HttpZSetKey[k, v]) DeserializeValue(msgpack []byte) (rets interface{}
 }
 func (ctx *HttpZSetKey[k, v]) DeserializeValues(msgpacks []string) (rets []interface{}, err error) {
 	return ctx.DeserializeToInterfaceSlice(msgpacks)
+}
+
+func GetHttpZSetKey(Key string, rdsName string) (IHttpZSetKey, error) {
+	_keyscope := KeyScope(Key)
+	ikey, ok := HttpZSetKeyMap.Get(_keyscope + ":" + rdsName)
+	if !ok {
+		return nil, fmt.Errorf("key schema not found")
+	}
+	return ikey, nil
 }
