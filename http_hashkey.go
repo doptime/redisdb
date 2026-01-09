@@ -19,6 +19,7 @@ type IHttpHashKey interface {
 	HGet(field string) (interface{}, error)
 	HGetAll() (map[string]interface{}, error)
 	HSet(field string, val interface{}) (int64, error)
+	HMGET(fields ...interface{}) (vals []interface{}, err error)
 }
 
 var HttpHashKeyMap cmap.ConcurrentMap[string, IHttpHashKey] = cmap.New[IHttpHashKey]()
@@ -101,4 +102,17 @@ func (ctx *HttpHashKey[k, v]) HSet(field string, val interface{}) (int64, error)
 		return 0, err
 	}
 	return hkey.HSet(key, val)
+}
+
+func (ctx *HttpHashKey[k, v]) HMGET(fields ...interface{}) (vals []interface{}, err error) {
+	hkey := (*HashKey[k, v])(ctx)
+	var values []v
+	values, err = hkey.HMGET(fields...)
+	if err != nil {
+		return nil, err
+	}
+	for _, val := range values {
+		vals = append(vals, val)
+	}
+	return vals, nil
 }
