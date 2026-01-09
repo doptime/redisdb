@@ -21,6 +21,7 @@ type IHttpHashKey interface {
 	HSet(field string, val interface{}) (int64, error)
 	HMGET(fields ...interface{}) (vals []interface{}, err error)
 	HKeys() (keys []string, err error)
+	HVals() (vals []interface{}, err error)
 	HExists(field string) (exists bool, err error)
 	HRandField(count int) (keys []string, err error)
 	HRandFieldWithValues(count int) (keyvalueMap map[string]interface{}, err error)
@@ -143,6 +144,18 @@ func (ctx *HttpHashKey[k, v]) HKeys() (keys []string, err error) {
 	}
 	for _, key := range keysRet {
 		keys = append(keys, fmt.Sprintf("%v", key))
+	}
+	return
+}
+func (ctx *HttpHashKey[k, v]) HVals() (vals []interface{}, err error) {
+	hkey := (*HashKey[k, v])(ctx)
+	var valuesRet []v
+	valuesRet, err = hkey.HVals()
+	if err != nil {
+		return nil, err
+	}
+	for _, val := range valuesRet {
+		vals = append(vals, val)
 	}
 	return
 }
