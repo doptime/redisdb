@@ -7,6 +7,13 @@ import (
 )
 
 type IHttpHashKey interface {
+	GetKeyType() KeyType
+	GetUseModer() bool
+	ValidDataKey() error
+	DeserializeValue(msgpack []byte) (rets interface{}, err error)
+	DeserializeValues(msgpacks []string) (rets []interface{}, err error)
+	TimestampFiller(in interface{}) (err error)
+
 	HScanNoValues(cursor uint64, match string, count int64) (keys []string, cursorRet uint64, err error)
 	HScan(cursor uint64, match string, count int64) (keys []string, values []interface{}, cursorRet uint64, err error)
 	HGet(field string) (interface{}, error)
