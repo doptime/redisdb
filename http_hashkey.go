@@ -15,6 +15,7 @@ type IHttpHashKey interface {
 	TimestampFiller(in interface{}) (err error)
 
 	HScanNoValues(cursor uint64, match string, count int64) (keys []string, cursorRet uint64, err error)
+	HScan(cursor uint64, match string, count int64) (keys []string, values []interface{}, cursorRet uint64, err error)
 	// HGet(field string) (interface{}, error)
 	// HGetAll() (map[string]interface{}, error)
 	// HSet(field string, val interface{}) (int64, error)
@@ -48,6 +49,24 @@ func (ctx *HttpHashKey[k, v]) HScanNoValues(cursor uint64, match string, count i
 	}
 	for _, key := range keysRet {
 		keys = append(keys, fmt.Sprintf("%v", key))
+	}
+	return
+}
+
+func (ctx *HttpHashKey[k, v]) HScan(cursor uint64, match string, count int64) (keys []string, values []interface{}, cursorRet uint64, err error) {
+	var (
+		keysRet   []k
+		valuesRet []v
+	)
+	keysRet, valuesRet, cursorRet, err = (*HashKey[k, v])(ctx).HScan(cursor, match, count)
+	if err != nil {
+		return
+	}
+	for _, key := range keysRet {
+		keys = append(keys, fmt.Sprintf("%v", key))
+	}
+	for _, val := range valuesRet {
+		values = append(values, val)
 	}
 	return
 }
