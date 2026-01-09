@@ -30,6 +30,19 @@ var HttpHashKeyMap cmap.ConcurrentMap[string, IHttpHashKey] = cmap.New[IHttpHash
 
 type HttpHashKey[k comparable, v any] HashKey[k, v]
 
+func (ctx *HttpHashKey[k, v]) GetKeyType() KeyType {
+	return (*HashKey[k, v])(ctx).GetKeyType()
+}
+func (ctx *HttpHashKey[k, v]) GetUseModer() bool {
+	return (*HashKey[k, v])(ctx).GetUseModer()
+}
+func (ctx *HttpHashKey[k, v]) ValidDataKey() error {
+	return (*HashKey[k, v])(ctx).ValidDataKey()
+}
+func (ctx *HttpHashKey[k, v]) TimestampFiller(in interface{}) (err error) {
+	return (*HashKey[k, v])(ctx).TimestampFiller(in)
+}
+
 func (ctx *HttpHashKey[k, v]) DeserializeValue(msgpack []byte) (rets interface{}, err error) {
 	return ctx.DeserializeToValue(msgpack)
 }
