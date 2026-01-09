@@ -34,8 +34,8 @@ func (ctx *ListKey[v]) RegisterHttpInterface() {
 	// register the key interface for web access
 	keyScope := strings.ToLower(KeyScope(ctx.Key))
 	hskey := ListKey[v]{ctx.Duplicate(ctx.Key, ctx.RdsName)}
-	IHashKey := HttpListKey[v](hskey)
-	HttpListKeyMap.Set(keyScope+":"+ctx.RdsName, &IHashKey)
+	IListKey := HttpListKey[v](hskey)
+	HttpListKeyMap.Set(keyScope+":"+ctx.RdsName, &IListKey)
 }
 
 func (ctx *ListKey[v]) ConcatKey(fields ...interface{}) *ListKey[v] {
