@@ -1,6 +1,10 @@
 package redisdb
 
-import "github.com/doptime/logger"
+import (
+	"strings"
+
+	"github.com/doptime/logger"
+)
 
 type SetKey[k comparable, v any] struct {
 	RedisKey[k, v]
@@ -23,9 +27,16 @@ func (ctx *SetKey[k, v]) HttpOn(op SetOp) (ctx1 *SetKey[k, v]) {
 	// don't register web data if it fully prepared
 	if op != 0 && ctx.Key != "" {
 		ctx.RegisterWebDataSchemaDocForWebVisit()
-		ctx.RegisterKeyInterfaceForWebVisit()
+		ctx.RegisterHttpInterface()
 	}
 	return ctx
+}
+func (ctx *SetKey[k, v]) RegisterHttpInterface() {
+	// register the key interface for web access
+	keyScope := strings.ToLower(KeyScope(ctx.Key))
+	hskey := SetKey[k, v]{ctx.Duplicate(ctx.Key, ctx.RdsName)}
+	IHashKey := HttpSetKey[k, v](hskey)
+	HttpSetKeyMap.Set(keyScope+":"+ctx.RdsName, &IHashKey)
 }
 
 // append to Set

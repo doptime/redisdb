@@ -14,7 +14,6 @@ type CtxInterface interface {
 	DeserializeToInterface(msgpack []byte) (rets interface{}, err error)
 	DeserializeToInterfaceSlice(msgpacks []string) (rets []interface{}, err error)
 	TimestampFiller(in interface{}) (err error)
-	CloneToRedisKey(newKey, RdsSourceName string) (newCtx *RedisKey[string, interface{}])
 }
 
 var RediskeyInterfaceForWebVisit cmap.ConcurrentMap[string, CtxInterface] = cmap.New[CtxInterface]()

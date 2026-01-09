@@ -47,12 +47,6 @@ func (ctx *RedisKey[k, v]) Duplicate(newKey, RdsSourceName string) (newCtx Redis
 		ctx.UseModer, ctx.PrimaryKeyFieldIndex}
 }
 
-func (ctx *RedisKey[k, v]) CloneToRedisKey(newKey, RdsSourceName string) (newCtx *RedisKey[string, interface{}]) {
-	newCtx = &RedisKey[string, interface{}]{ctx.Context, RdsSourceName, ctx.Rds, newKey, ctx.KeyType,
-		ctx.SerializeKey, ctx.SerializeValue, ctx.DeserializeToInterface, ctx.DeserializeToInterfaceSlice, ctx.TimestampFiller, ctx.Validate,
-		ctx.UseModer, ctx.PrimaryKeyFieldIndex}
-	return newCtx
-}
 func (ctx *RedisKey[k, v]) InitFunc() {
 	ctx.Context = context.Background()
 	ctx.SerializeKey = ctx.getSerializeFun(reflect.TypeOf((*k)(nil)).Elem().Kind())

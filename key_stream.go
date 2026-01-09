@@ -1,6 +1,8 @@
 package redisdb
 
 import (
+	"strings"
+
 	"github.com/doptime/logger"
 )
 
@@ -27,7 +29,14 @@ func (ctx *StreamKey[k, v]) HttpOn(op StreamOp) (ctx1 *StreamKey[k, v]) {
 	// don't register web data if it fully prepared
 	if op != 0 && ctx.Key != "" {
 		ctx.RegisterWebDataSchemaDocForWebVisit()
-		ctx.RegisterKeyInterfaceForWebVisit()
+		ctx.RegisterHttpInterface()
 	}
 	return ctx
+}
+func (ctx *StreamKey[k, v]) RegisterHttpInterface() {
+	// register the key interface for web access
+	keyScope := strings.ToLower(KeyScope(ctx.Key))
+	hskey := StreamKey[k, v]{ctx.Duplicate(ctx.Key, ctx.RdsName)}
+	IHashKey := HttpStreamKey[k, v](hskey)
+	HttpStreamKeyMap.Set(keyScope+":"+ctx.RdsName, &IHashKey)
 }

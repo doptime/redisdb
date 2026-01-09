@@ -38,11 +38,6 @@ func valueTypeName(value interface{}) (Key string, err error) {
 	}
 	return Key, nil
 }
-func (ctx *RedisKey[k, v]) RegisterKeyInterfaceForWebVisit() {
-	// register the key interface for web access
-	keyScope := strings.ToLower(KeyScope(ctx.Key))
-	RediskeyInterfaceForWebVisit.Set(keyScope+":"+ctx.RdsName, ctx)
-}
 func (ctx *RedisKey[k, v]) RegisterWebDataSchemaDocForWebVisit() {
 	// check if type of v can be instantiated
 	_v := (*v)(nil)

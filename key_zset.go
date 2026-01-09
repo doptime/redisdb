@@ -2,6 +2,7 @@ package redisdb
 
 import (
 	"reflect"
+	"strings"
 
 	"github.com/doptime/logger"
 	"github.com/redis/go-redis/v9"
@@ -31,9 +32,16 @@ func (ctx *ZSetKey[k, v]) HttpOn(op ZSetOp) (ctx1 *ZSetKey[k, v]) {
 	// don't register web data if it fully prepared
 	if op != 0 && ctx.Key != "" {
 		ctx.RegisterWebDataSchemaDocForWebVisit()
-		ctx.RegisterKeyInterfaceForWebVisit()
+		ctx.RegisterHttpInterface()
 	}
 	return ctx
+}
+func (ctx *ZSetKey[k, v]) RegisterHttpInterface() {
+	// register the key interface for web access
+	keyScope := strings.ToLower(KeyScope(ctx.Key))
+	hskey := ZSetKey[k, v]{ctx.Duplicate(ctx.Key, ctx.RdsName)}
+	IZSetKey := HttpZSetKey[k, v](hskey)
+	HttpZSetKeyMap.Set(keyScope+":"+ctx.RdsName, &IZSetKey)
 }
 
 func (ctx *ZSetKey[k, v]) ZAdd(members ...redis.Z) (err error) {

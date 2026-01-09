@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"strings"
 
 	"github.com/doptime/logger"
 )
@@ -39,9 +40,16 @@ func (ctx *VectorSetKey[k, v]) HttpOn(op VectorSetOp) *VectorSetKey[k, v] {
 	httpAllow(ctx.Key, uint64(op))
 	if op != 0 && ctx.Key != "" {
 		ctx.RegisterWebDataSchemaDocForWebVisit()
-		ctx.RegisterKeyInterfaceForWebVisit()
+		ctx.RegisterHttpInterface()
 	}
 	return ctx
+}
+func (ctx *VectorSetKey[k, v]) RegisterHttpInterface() {
+	// register the key interface for web access
+	keyScope := strings.ToLower(KeyScope(ctx.Key))
+	hskey := VectorSetKey[k, v]{ctx.Duplicate(ctx.Key, ctx.RdsName)}
+	IHashKey := HttpVectorSetKey[k, v](hskey)
+	HttpVectorSetKeyMap.Set(keyScope+":"+ctx.RdsName, &IHashKey)
 }
 
 // -----------------------------------------------------------------------------
