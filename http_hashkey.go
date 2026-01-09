@@ -16,9 +16,9 @@ type IHttpHashKey interface {
 
 	HScanNoValues(cursor uint64, match string, count int64) (keys []string, cursorRet uint64, err error)
 	HScan(cursor uint64, match string, count int64) (keys []string, values []interface{}, cursorRet uint64, err error)
-	// HGet(field string) (interface{}, error)
-	// HGetAll() (map[string]interface{}, error)
-	// HSet(field string, val interface{}) (int64, error)
+	HGet(field string) (interface{}, error)
+	HGetAll() (map[string]interface{}, error)
+	HSet(field string, val interface{}) (int64, error)
 }
 
 var HttpHashKeyMap cmap.ConcurrentMap[string, IHttpHashKey] = cmap.New[IHttpHashKey]()
@@ -69,4 +69,36 @@ func (ctx *HttpHashKey[k, v]) HScan(cursor uint64, match string, count int64) (k
 		values = append(values, val)
 	}
 	return
+}
+
+func (ctx *HttpHashKey[k, v]) HGet(field string) (val interface{}, err error) {
+	hkey := (*HashKey[k, v])(ctx)
+	var key k
+	key, err = hkey.toKey([]byte(field))
+	if err != nil {
+		return nil, err
+	}
+	return hkey.HGet(key)
+}
+
+func (ctx *HttpHashKey[k, v]) HGetAll() (map[string]interface{}, error) {
+	result := make(map[string]interface{})
+	dataMap, err := (*HashKey[k, v])(ctx).HGetAll()
+	if err != nil {
+		return nil, err
+	}
+	for key, val := range dataMap {
+		result[fmt.Sprintf("%v", key)] = val
+	}
+	return result, nil
+}
+
+func (ctx *HttpHashKey[k, v]) HSet(field string, val interface{}) (int64, error) {
+	hkey := (*HashKey[k, v])(ctx)
+	var key k
+	key, err := hkey.toKey([]byte(field))
+	if err != nil {
+		return 0, err
+	}
+	return hkey.HSet(key, val)
 }
