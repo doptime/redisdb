@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/doptime/logger"
 	"github.com/redis/go-redis/v9"
@@ -75,7 +74,7 @@ func (ctx *HashKey[k, v]) HttpOn(op HashOp) (ctx1 *HashKey[k, v]) {
 }
 func (ctx *HashKey[k, v]) RegisterHttpInterface() {
 	// register the key interface for web access
-	keyScope := strings.ToLower(KeyScope(ctx.Key))
+	keyScope := KeyScope(ctx.Key)
 	hskey := HashKey[k, v]{ctx.Duplicate(ctx.Key, ctx.RdsName)}
 	IHashKey := HttpHashKey[k, v](hskey)
 	HttpHashKeyMap.Set(keyScope+":"+ctx.RdsName, &IHashKey)

@@ -1,7 +1,6 @@
 package redisdb
 
 import (
-	"strings"
 	"time"
 
 	"github.com/doptime/logger"
@@ -32,7 +31,7 @@ func (ctx *ListKey[v]) HttpOn(op ListOp) (ctx1 *ListKey[v]) {
 }
 func (ctx *ListKey[v]) RegisterHttpInterface() {
 	// register the key interface for web access
-	keyScope := strings.ToLower(KeyScope(ctx.Key))
+	keyScope := KeyScope(ctx.Key)
 	hskey := ListKey[v]{ctx.Duplicate(ctx.Key, ctx.RdsName)}
 	IListKey := HttpListKey[v](hskey)
 	HttpListKeyMap.Set(keyScope+":"+ctx.RdsName, &IListKey)

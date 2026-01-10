@@ -36,7 +36,7 @@ func (ctx *StringKey[k, v]) HttpOn(op StringOp) (ctx1 *StringKey[k, v]) {
 }
 func (ctx *StringKey[k, v]) RegisterHttpInterface() {
 	// register the key interface for web access
-	keyScope := strings.ToLower(KeyScope(ctx.Key))
+	keyScope := KeyScope(ctx.Key)
 	hskey := StringKey[k, v]{ctx.Duplicate(ctx.Key, ctx.RdsName)}
 	HttpStringKey := HttpStringKey[k, v](hskey)
 	HttpStringKeyMap.Set(keyScope+":"+ctx.RdsName, &HttpStringKey)

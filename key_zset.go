@@ -2,7 +2,6 @@ package redisdb
 
 import (
 	"reflect"
-	"strings"
 
 	"github.com/doptime/logger"
 	"github.com/redis/go-redis/v9"
@@ -37,7 +36,7 @@ func (ctx *ZSetKey[k, v]) HttpOn(op ZSetOp) (ctx1 *ZSetKey[k, v]) {
 }
 
 func (ctx *ZSetKey[k, v]) RegisterHttpInterface() {
-	keyScope := strings.ToLower(KeyScope(ctx.Key))
+	keyScope := KeyScope(ctx.Key)
 	hskey := ZSetKey[k, v]{ctx.Duplicate(ctx.Key, ctx.RdsName)}
 	IZSetKey := HttpZSetKey[k, v](hskey)
 	HttpZSetKeyMap.Set(keyScope+":"+ctx.RdsName, &IZSetKey)

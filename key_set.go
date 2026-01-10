@@ -1,8 +1,6 @@
 package redisdb
 
 import (
-	"strings"
-
 	"github.com/doptime/logger"
 )
 
@@ -33,7 +31,7 @@ func (ctx *SetKey[k, v]) HttpOn(op SetOp) (ctx1 *SetKey[k, v]) {
 }
 func (ctx *SetKey[k, v]) RegisterHttpInterface() {
 	// register the key interface for web access
-	keyScope := strings.ToLower(KeyScope(ctx.Key))
+	keyScope := KeyScope(ctx.Key)
 	hskey := SetKey[k, v]{ctx.Duplicate(ctx.Key, ctx.RdsName)}
 	IHashKey := HttpSetKey[k, v](hskey)
 	HttpSetKeyMap.Set(keyScope+":"+ctx.RdsName, &IHashKey)
