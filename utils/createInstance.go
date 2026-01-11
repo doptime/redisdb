@@ -2,41 +2,35 @@ package utils
 
 import "reflect"
 
+// CreateNonNilInstance creates a non-nil instance of type T.
+// If T is a pointer (even deeply nested like **Struct), it recursively
+// initializes the underlying type and re-wraps the pointers.
 func CreateNonNilInstance[T any]() T {
 	var zero T
-	typ := reflect.TypeOf(&zero).Elem() // 获取 T 的反射类型
+	typ := reflect.TypeOf(&zero).Elem()
 
-	// 1. 如果 T 本身不是指针，直接返回零值即可（结构体零值即为可用实例）
-	// 或者如果你希望结构体字段也有默认值，这里需要额外逻辑，但通常零值够用。
+	// 1. If T is not a pointer, return the zero value (e.g., empty struct).
 	if typ.Kind() != reflect.Ptr {
 		return zero
 	}
 
-	// 2. 剥离指针，寻找最底层的 Base Type
-	// 例如：如果是 ***int，我们需要找到 int
+	// 2. Unwrap pointers to find the underlying base type.
 	baseType := typ
 	for baseType.Kind() == reflect.Ptr {
 		baseType = baseType.Elem()
 	}
 
-	// 3. 实例化底层类型
-	// reflect.New(baseType) 返回的是 *BaseType (即指向底层的指针)
-	// 例如：baseType 是 int，这里得到 *int
+	// 3. Instantiate the base type.
+	// reflect.New returns a pointer to the type (*BaseType).
 	val := reflect.New(baseType)
 
-	// 4. 重新包装指针层级
-	// 我们现在的 val 是 *BaseType。
-	// 如果目标 T 是 **BaseType，我们需要创建一个指向 val 的指针。
-	// 我们需要一直包装，直到 val 的类型等于 T。
+	// 4. Re-wrap the pointer layers until the type matches T.
 	for val.Type() != typ {
-		// 创建一个指向当前 val 的新指针
 		ptr := reflect.New(val.Type())
-		// 将新指针的值设置为当前 val
 		ptr.Elem().Set(val)
-		// 更新 val 为这个新指针
 		val = ptr
 	}
 
-	// 5. 转回具体的泛型类型 T
+	// 5. Cast back to generic type T and return.
 	return val.Interface().(T)
 }
