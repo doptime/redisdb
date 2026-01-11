@@ -13,9 +13,8 @@ type IHttpZSetKey interface {
 	// 基础接口
 	GetKeyType() KeyType
 	GetUseModer() bool
+	GetValue() interface{}
 	ValidDataKey() error
-	DeserializeValue(msgpack []byte) (rets interface{}, err error)
-	DeserializeValues(msgpacks []string) (rets []interface{}, err error)
 	TimestampFiller(in interface{}) (err error)
 
 	// Context 注入 (核心：用于多租户/Key变换)
@@ -60,11 +59,18 @@ func (ctx *HttpZSetKey[k, v]) native() *ZSetKey[k, v] {
 	return (*ZSetKey[k, v])(ctx)
 }
 
-func (ctx *HttpZSetKey[k, v]) DeserializeValue(msgpack []byte) (rets interface{}, err error) {
-	return ctx.native().DeserializeToValue(msgpack)
+func (ctx *HttpZSetKey[k, v]) GetKeyType() KeyType {
+	return ctx.native().GetKeyType()
 }
-func (ctx *HttpZSetKey[k, v]) DeserializeValues(msgpacks []string) (rets []interface{}, err error) {
-	return ctx.native().DeserializeToInterfaceSlice(msgpacks)
+func (ctx *HttpZSetKey[k, v]) GetUseModer() bool {
+	return ctx.native().GetUseModer()
+}
+func (ctx *HttpZSetKey[k, v]) GetValue() interface{} {
+	var _value v
+	return _value
+}
+func (ctx *HttpZSetKey[k, v]) ValidDataKey() error {
+	return ctx.native().ValidDataKey()
 }
 
 // WithContext 实现：克隆自己，修改 Key 和 DS，返回接口

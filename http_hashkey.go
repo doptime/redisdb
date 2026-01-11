@@ -10,8 +10,7 @@ type IHttpHashKey interface {
 	GetKeyType() KeyType
 	GetUseModer() bool
 	ValidDataKey() error
-	DeserializeValue(msgpack []byte) (rets interface{}, err error)
-	DeserializeValues(msgpacks []string) (rets []interface{}, err error)
+	GetValue() interface{}
 	TimestampFiller(in interface{}) (err error)
 
 	WithContext(key string, RedisDataSource string) IHttpHashKey
@@ -39,18 +38,15 @@ func (ctx *HttpHashKey[k, v]) GetKeyType() KeyType {
 func (ctx *HttpHashKey[k, v]) GetUseModer() bool {
 	return (*HashKey[k, v])(ctx).GetUseModer()
 }
+func (ctx *HttpHashKey[k, v]) GetValue() interface{} {
+	var _value v
+	return _value
+}
 func (ctx *HttpHashKey[k, v]) ValidDataKey() error {
 	return (*HashKey[k, v])(ctx).ValidDataKey()
 }
 func (ctx *HttpHashKey[k, v]) TimestampFiller(in interface{}) (err error) {
 	return (*HashKey[k, v])(ctx).TimestampFiller(in)
-}
-
-func (ctx *HttpHashKey[k, v]) DeserializeValue(msgpack []byte) (rets interface{}, err error) {
-	return ctx.DeserializeToValue(msgpack)
-}
-func (ctx *HttpHashKey[k, v]) DeserializeValues(msgpacks []string) (rets []interface{}, err error) {
-	return ctx.DeserializeToInterfaceSlice(msgpacks)
 }
 
 func (ctx *HttpHashKey[k, v]) native() *HashKey[k, v] {

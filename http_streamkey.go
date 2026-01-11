@@ -13,9 +13,8 @@ type IHttpStreamKey interface {
 	// --- 基础元数据 ---
 	GetKeyType() KeyType
 	GetUseModer() bool
+	GetValue() interface{}
 	ValidDataKey() error
-	DeserializeValue(msgpack []byte) (rets interface{}, err error)
-	DeserializeValues(msgpacks []string) (rets []interface{}, err error)
 	TimestampFiller(in interface{}) (err error)
 
 	// --- 上下文注入 (核心) ---
@@ -55,17 +54,15 @@ func (ctx *HttpStreamKey[k, v]) GetKeyType() KeyType {
 func (ctx *HttpStreamKey[k, v]) GetUseModer() bool {
 	return ctx.native().GetUseModer()
 }
+func (ctx *HttpStreamKey[k, v]) GetValue() interface{} {
+	var _value v
+	return _value
+}
 func (ctx *HttpStreamKey[k, v]) ValidDataKey() error {
 	return ctx.native().ValidDataKey()
 }
 func (ctx *HttpStreamKey[k, v]) TimestampFiller(in interface{}) (err error) {
 	return ctx.native().TimestampFiller(in)
-}
-func (ctx *HttpStreamKey[k, v]) DeserializeValue(msgpack []byte) (rets interface{}, err error) {
-	return ctx.native().DeserializeToValue(msgpack)
-}
-func (ctx *HttpStreamKey[k, v]) DeserializeValues(msgpacks []string) (rets []interface{}, err error) {
-	return ctx.native().DeserializeToInterfaceSlice(msgpacks)
 }
 
 // WithContext: 克隆对象并注入上下文

@@ -10,9 +10,8 @@ import (
 type IHttpStringKey interface {
 	GetKeyType() KeyType
 	GetUseModer() bool
+	GetValue() interface{}
 	ValidDataKey() error
-	DeserializeValue(msgpack []byte) (rets interface{}, err error)
-	DeserializeValues(msgpacks []string) (rets []interface{}, err error)
 	TimestampFiller(in interface{}) (err error)
 
 	// Context 注入 (核心：用于多租户/Key变换)
@@ -40,18 +39,15 @@ func (ctx *HttpStringKey[k, v]) GetKeyType() KeyType {
 func (ctx *HttpStringKey[k, v]) GetUseModer() bool {
 	return ctx.native().GetUseModer()
 }
+func (ctx *HttpStringKey[k, v]) GetValue() interface{} {
+	var _value v
+	return _value
+}
 func (ctx *HttpStringKey[k, v]) ValidDataKey() error {
 	return ctx.native().ValidDataKey()
 }
 func (ctx *HttpStringKey[k, v]) TimestampFiller(in interface{}) (err error) {
 	return ctx.native().TimestampFiller(in)
-}
-
-func (ctx *HttpStringKey[k, v]) DeserializeValue(msgpack []byte) (rets interface{}, err error) {
-	return ctx.native().DeserializeToValue(msgpack)
-}
-func (ctx *HttpStringKey[k, v]) DeserializeValues(msgpacks []string) (rets []interface{}, err error) {
-	return ctx.native().DeserializeToInterfaceSlice(msgpacks)
 }
 
 // WithContext 实现：克隆自己，修改 Key 和 DS，返回接口
