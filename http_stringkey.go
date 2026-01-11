@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/doptime/redisdb/utils"
 	cmap "github.com/orcaman/concurrent-map/v2"
 )
 
@@ -40,8 +41,7 @@ func (ctx *HttpStringKey[k, v]) GetUseModer() bool {
 	return ctx.native().GetUseModer()
 }
 func (ctx *HttpStringKey[k, v]) GetValue() interface{} {
-	var _value v
-	return _value
+	return utils.CreateNonNilInstance[v]()
 }
 func (ctx *HttpStringKey[k, v]) ValidDataKey() error {
 	return ctx.native().ValidDataKey()

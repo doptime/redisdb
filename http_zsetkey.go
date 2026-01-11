@@ -3,6 +3,7 @@ package redisdb
 import (
 	"fmt"
 
+	"github.com/doptime/redisdb/utils"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/redis/go-redis/v9"
 )
@@ -66,8 +67,7 @@ func (ctx *HttpZSetKey[k, v]) GetUseModer() bool {
 	return ctx.native().GetUseModer()
 }
 func (ctx *HttpZSetKey[k, v]) GetValue() interface{} {
-	var _value v
-	return _value
+	return utils.CreateNonNilInstance[v]()
 }
 func (ctx *HttpZSetKey[k, v]) ValidDataKey() error {
 	return ctx.native().ValidDataKey()
