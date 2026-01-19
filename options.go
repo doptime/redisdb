@@ -29,9 +29,20 @@ func (i Option) Key(key string) (o Option) {
 	o.RedisKey = key
 	return
 }
+func WithKey(key string) (o Option) {
+	Opt.cp(&o)
+	o.RedisKey = key
+	return
+}
 
 func (i Option) Rds(dataSource string) (o Option) {
 	i.cp(&o)
+	o.RedisDataSource = dataSource
+	return
+}
+
+func WithRds(dataSource string) (o Option) {
+	Opt.cp(&o)
 	o.RedisDataSource = dataSource
 	return
 }
