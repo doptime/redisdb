@@ -54,3 +54,10 @@ func (i Option) Modifier(extraModifiers map[string]ModifierFunc) (o Option) {
 	}
 	return
 }
+func WithModifier(extraModifiers map[string]ModifierFunc) (o Option) {
+	Opt.cp(&o)
+	for k, v := range extraModifiers {
+		o.Modifiers[k] = v
+	}
+	return
+}
