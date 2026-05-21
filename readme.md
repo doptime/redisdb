@@ -83,6 +83,17 @@ redisdb.CatYearWeek(t)      // "YW_202621"
 **默认只在字段为零值时跑**,加 `,force` 后无条件跑;多指令用 `,` 串接,从左到右执行。
 手动触发:`redisdb.ApplyModifiers(&v)`。
 
+### CreatedAt / UpdatedAt 自动填充
+
+V 里若有**严格命名**为 `CreatedAt` 或 `UpdatedAt` 且类型为 `time.Time`(非指针)的字段,
+框架会在反序列化时自动接管:
+
+- `CreatedAt`:**仅在零值时**填 `time.Now().UTC()`
+- `UpdatedAt`:**总是**覆盖为 `time.Now().UTC()`
+
+- 💡 触发点是 **read 时**(`DeserializeToInterface`),**不是 save**;而且只走 HTTP 暴露层的反序列化路径,常规 Go 直接调 `HGet`/`Get`/`LPop` 等**不触发**
+- 💡 字段名严格区分大小写;`createdAt` / `CreateAt` / `*time.Time` / `int64` 一律不识别 —— 想要写入时戳还是用 `mod:"unixtime=ms,force"`
+
 ### 错误约定
 
 - `redis.Nil` = key/字段不存在,用 `errors.Is` 区分
@@ -323,6 +334,22 @@ func (c *VectorSetKey[K, V]) KNNParamHelper(k int, field string, vec []float32) 
 - 💡 `Search` 返回的 `count` 是服务端总匹配数,**不是 `len(docs)`**(分页时不等)
 - 💡 文档解析走 JSON round-trip,V 的 tag 必须是 `json:"…"`,**不是** `msgpack:"…"`
 - 💡 `KNNParamHelper` 返回 `(queryFragment, params)`,自己拼 `"*=>" + frag` 再传给 `Search`
+
+最小 KNN 工作流:
+
+```go
+// 1. 建索引(FT.CREATE 尾段原样透传)
+idx.Create(
+    "ON", "HASH", "PREFIX", "1", "doc:",
+    "SCHEMA",
+    "title", "TEXT",
+    "vec",   "VECTOR", "HNSW", "6", "TYPE", "FLOAT32", "DIM", "128", "DISTANCE_METRIC", "L2",
+)
+
+// 2. KNN 查询(写入用普通 Redis HSET,这里只演示查询)
+frag, params := idx.KNNParamHelper(10, "vec", embedding)
+count, docs, err := idx.Search("*=>"+frag, params...)
+```
 
 ---
 
