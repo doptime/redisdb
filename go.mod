@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.24.1
 
 require (
-	github.com/doptime/config v0.0.0-20250322030901-0115e7134058
+	github.com/doptime/config v0.0.0-20260612022958-8080233fc46d
 	github.com/doptime/logger v0.0.0-20241013090925-4b12ee9d0b17
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/orcaman/concurrent-map/v2 v2.0.1
