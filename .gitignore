@@ -1,5 +1,5 @@
 
 *.evolab.md
 *.evointention
-.evo/
 .evolab/
+.DS_Store
